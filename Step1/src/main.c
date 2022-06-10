@@ -1,9 +1,20 @@
-/** @file main.c
- * @brief Contains the the implementation of the Assignment4
+/** Test to Button, ADC and PWM of the Assigment 5
  * 
- * @author Mattia Longo and Giacomo Bego
- * @date 31 May 2022
- * @bug No known bugs
+ *  Bego Giacomo, Longo Mattia - 10/06/2022
+ *  
+ *  The test is useful to check the peripheral used
+ *  in the Assignment 3. When the button 3 is pressed
+ *  the system go in the manual mode and then is possible
+ *  increase and decrease the light intesity of the LED.
+ *  When the button 3 is pressed again the system switch
+ *  in the automatic mode where is used the ADC and the 
+ *  samples filter. The light intesity of the LED is 
+ *  inversely proportional to the enviromental light intensity.
+ *
+ *  BUTTON 1: Increase the light intensity of the LED
+ *  BUTTON 2: Decrease the light intensity of the LED
+ *  BUTTON 3: Change the system from automatic to manual mode an viceversa
+ *
  */
 
 
@@ -37,6 +48,16 @@
 #define BUFFER_SIZE 1
 #define SIZE 10 /* Size of the vector to filter */
 
+/* Refer to dts file */
+#define GPIO0_NID DT_NODELABEL(gpio0) 
+#define BOARDBUT1 0xb /* Pin at which BUT1 is connected. Addressing is direct (i.e., pin number) */
+#define BOARDBUT2 0xc /* Pin at which BUT2 is connected. Addressing is direct (i.e., pin number) */
+#define BOARDBUT3 0x18 /* Pin at which BUT3 is connected. Addressing is direct (i.e., pin number) */
+
+/* Int related declarations */
+static struct gpio_callback but1_cb_data; /* Callback structure */
+static struct gpio_callback but2_cb_data; /* Callback structure */
+static struct gpio_callback but3_cb_data; /* Callback structure */
 
 /* ADC channel configuration */
 static const struct adc_channel_cfg my_channel_cfg = {
@@ -59,12 +80,31 @@ int8_t index=-1;
 uint16_t average=0;
 uint16_t upperLevel=0;
 uint16_t lowerLevel=0;
+uint16_t highLevel_us=0;
 
+/* Callback function and variables */
+volatile bool mode=0;
+volatile bool up=0;
+volatile bool down=0;
 
-/* ISR of the interrupt*/
+bool state=0;
+
+/* Routine related to the interrupt for mode on/off */
 void but1press_cbfunction(){
-    //printk("UP product\n"); // button 1 hit !    
-    sw=1;
+    printk("Button 1 pressed\n");
+    up=1;
+}
+
+/* Routine related to the interrupt for increase intensity */
+void but2press_cbfunction(){
+    printk("Button 2 pressed\n");
+    down=1;
+}
+
+/* Routine related to the interrupt for decrease intensity */
+void but3press_cbfunction(){
+    printk("Button 3 pressed\n");
+    mode=1;
 }
 
 
@@ -97,7 +137,84 @@ void main(void) {
     
     int err=0;
 
+    /* Local vars */
+    const struct device *gpio0_dev;         /* Pointer to GPIO device structure */
+
+    int ret=0; 
+
+    gpio0_dev = device_get_binding(DT_LABEL(GPIO0_NID));
+    
+    /* check the buttons binding */
+    if (gpio0_dev == NULL) {
+        printk("Error: Failed to bind to GPIO0\n\r");        
+	return;
+    }
+    else {
+        printk("Bind to GPIO0 successfull \n\r");        
+    }
+    
+    /* configuring buttons */
+    ret = gpio_pin_configure(gpio0_dev, BOARDBUT1, GPIO_INPUT | GPIO_PULL_UP);
+    if (ret < 0) {
+        printk("Error %d: Failed to configure BUT 1 \n\r", ret);
+	return;
+    }
+    ret = gpio_pin_configure(gpio0_dev, BOARDBUT2, GPIO_INPUT | GPIO_PULL_UP);
+    if (ret < 0) {
+        printk("Error %d: Failed to configure BUT 2 \n\r", ret);
+	return;
+    }
+    ret = gpio_pin_configure(gpio0_dev, BOARDBUT3, GPIO_INPUT | GPIO_PULL_UP);
+    if (ret < 0) {
+        printk("Error %d: Failed to configure BUT 3 \n\r", ret);
+	return;
+    }
+    
+    /* Set interrupt HW - which pin and event generate interrupt */
+    ret = gpio_pin_interrupt_configure(gpio0_dev, BOARDBUT1, GPIO_INT_EDGE_TO_ACTIVE);
+    gpio_init_callback(&but1_cb_data, but1press_cbfunction, BIT(BOARDBUT1));
+    gpio_add_callback(gpio0_dev, &but1_cb_data);
+
+    ret = gpio_pin_interrupt_configure(gpio0_dev, BOARDBUT2, GPIO_INT_EDGE_TO_ACTIVE);
+    gpio_init_callback(&but2_cb_data, but2press_cbfunction, BIT(BOARDBUT2));
+    gpio_add_callback(gpio0_dev, &but2_cb_data);
+
+    ret = gpio_pin_interrupt_configure(gpio0_dev, BOARDBUT3, GPIO_INT_EDGE_TO_ACTIVE);
+    gpio_init_callback(&but3_cb_data, but3press_cbfunction, BIT(BOARDBUT3));
+    gpio_add_callback(gpio0_dev, &but3_cb_data);
+    
+
+    /* PWM control in function of environment light */
+      const struct device *pwm0_dev;          /* Pointer to PWM device structure */
+      unsigned int pwmPeriod_us = 1000;       /* PWM period in us */
+      ret=0;                              /* Generic return value variable */
+
+      /* Return pointer to device structure with the given name */
+      pwm0_dev = device_get_binding(DT_LABEL(PWM0_NID));
+      if (pwm0_dev == NULL) {
+          printk("\nError: Failed to bind to PWM0 r");
+          return;
+      }
+    
     while(1){
+
+
+    /* Manual/Automatic mode */
+      if(mode==1 && state==0){
+          printk("Switch to MANUAL MODE");
+          highLevel_us=0;
+          state=1;
+          mode=0;
+      }
+      else if(mode==1 && state==1){
+          printk("Switch to AUTOMATIC MODE");
+          state=0;
+          mode=0;
+      }
+      k_msleep(5);
+
+    /* Automatic mode */
+    if(state==0){
 
       /* ADC setup: bind and initialize */
       adc_dev = device_get_binding(DT_LABEL(ADC_NID));
@@ -129,7 +246,6 @@ void main(void) {
 
 
       /* Filter implementation */
-
       if(index<SIZE-1){
           index++;
       }
@@ -167,8 +283,6 @@ void main(void) {
       }
       printk("\n\n");
           
-      
-
 
       uint16_t sum2=0;
 	
@@ -181,27 +295,35 @@ void main(void) {
           output=sum2/j;
       }
 
-
-      /* PWM control in function of environment light */
-
-      const struct device *pwm0_dev;          /* Pointer to PWM device structure */
-      unsigned int pwmPeriod_us = 1000;       /* PWM period in us */
-      int ret=0;                              /* Generic return value variable */
-
-      /* Return pointer to device structure with the given name */
-      pwm0_dev = device_get_binding(DT_LABEL(PWM0_NID));
-      if (pwm0_dev == NULL) {
-          printk("\nError: Failed to bind to PWM0 r");
+          ret = pwm_pin_set_usec(pwm0_dev, BOARDLED_PIN,
+                        pwmPeriod_us,(unsigned int)((pwmPeriod_us*output)/1023), PWM_POLARITY_NORMAL);
+          if (ret) {
+              printk("Error %d: failed to set pulse width\n", ret);
           return;
+          }
+      }
+      else{
+          if(up==1){
+              if(highLevel_us<1000){  
+                  highLevel_us=highLevel_us+50;
+              }
+              up=0;
+              k_msleep(5);
+          }
+          else if(down==1){
+              if(highLevel_us>0){  
+                  highLevel_us=highLevel_us-50;
+              }
+              down=0;
+              k_msleep(5);
+          }
+
+          printk("High level period is: %d us \n",highLevel_us);
+
+          ret = pwm_pin_set_usec(pwm0_dev, BOARDLED_PIN,
+                        pwmPeriod_us,(unsigned int)(highLevel_us), PWM_POLARITY_NORMAL);
       }
 
-      ret = pwm_pin_set_usec(pwm0_dev, BOARDLED_PIN,
-		      pwmPeriod_us,(unsigned int)((pwmPeriod_us*output)/1023), PWM_POLARITY_NORMAL);
-      if (ret) {
-       printk("Error %d: failed to set pulse width\n", ret);
-          return;
-      }
-       
 
     // k_msleep(1000);
 
