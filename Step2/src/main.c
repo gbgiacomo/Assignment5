@@ -2,7 +2,12 @@
  * 
  *  Bego Giacomo, Longo Mattia - 13/06/2022
  *  
- *  Description...
+ *  In this script the manual mode is implemented.
+ *  In the automatic mode the sensor is read and
+ *  the enviromental intesity value drive the intensity
+ *  of the green LED proportionally. It isn't yet implemented the 
+ *  control mechanism of the LED, the increment of the hours
+ *  and the terminal interaction.
  *
  *  Manual mode:
  *    - BUTTON 1: Increase the light intensity of the LED

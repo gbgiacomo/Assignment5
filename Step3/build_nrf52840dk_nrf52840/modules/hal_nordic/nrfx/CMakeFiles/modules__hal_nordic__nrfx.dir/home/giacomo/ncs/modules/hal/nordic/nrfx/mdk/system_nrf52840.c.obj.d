@@ -1,0 +1,24 @@
+modules/hal_nordic/nrfx/CMakeFiles/modules__hal_nordic__nrfx.dir/home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/system_nrf52840.c.obj: \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/system_nrf52840.c \
+ /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/include/generated/autoconf.h \
+ /home/giacomo/ncs/zephyr/include/toolchain/zephyr_stdint.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/system_nrf52.c \
+ /home/giacomo/ncs/zephyr/lib/libc/minimal/include/stdint.h \
+ /home/giacomo/ncs/zephyr/lib/libc/minimal/include/stdbool.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/nrf.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/nrf52840.h \
+ /home/giacomo/ncs/modules/hal/cmsis/CMSIS/Core/Include/core_cm4.h \
+ /home/giacomo/ncs/modules/hal/cmsis/CMSIS/Core/Include/cmsis_version.h \
+ /home/giacomo/ncs/modules/hal/cmsis/CMSIS/Core/Include/cmsis_compiler.h \
+ /home/giacomo/ncs/modules/hal/cmsis/CMSIS/Core/Include/cmsis_gcc.h \
+ /home/giacomo/ncs/modules/hal/cmsis/CMSIS/Core/Include/mpu_armv7.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/system_nrf52840.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/nrf52840_bitfields.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/nrf51_to_nrf52840.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/nrf52_to_nrf52840.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/compiler_abstraction.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/nrf_peripherals.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/nrf52840_peripherals.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/nrf52_erratas.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/system_nrf52.h \
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/mdk/system_nrf52_approtect.h
