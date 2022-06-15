@@ -32,10 +32,11 @@
 #define thread_MANUAL_prio 1
 #define thread_AUTOMATIC_prio 1
 #define thread_FILTER_prio 1
+#define thread_CONTROL_prio 1
 #define thread_PWM_prio 1
 
 /* First therad periodicity (in ms)*/
-#define thread_A_period 30
+#define thread_A_period 100
 
 #define STACK_SIZE 1024
 
@@ -44,6 +45,7 @@ K_THREAD_STACK_DEFINE(thread_A_stack, STACK_SIZE);
 K_THREAD_STACK_DEFINE(thread_MANUAL_stack, STACK_SIZE);
 K_THREAD_STACK_DEFINE(thread_AUTOMATIC_stack, STACK_SIZE);
 K_THREAD_STACK_DEFINE(thread_FILTER_stack, STACK_SIZE);
+K_THREAD_STACK_DEFINE(thread_CONTROL_stack, STACK_SIZE);
 K_THREAD_STACK_DEFINE(thread_PWM_stack, STACK_SIZE);
   
 /* Create variables for thread data */
@@ -51,6 +53,7 @@ struct k_thread thread_A_data;
 struct k_thread thread_MANUAL_data;
 struct k_thread thread_AUTOMATIC_data;
 struct k_thread thread_FILTER_data;
+struct k_thread thread_CONTROL_data;
 struct k_thread thread_PWM_data;
 
 /* Create task IDs */
@@ -58,19 +61,22 @@ k_tid_t thread_A_tid;
 k_tid_t thread_MANUAL_tid;
 k_tid_t thread_AUTOMATIC_tid;
 k_tid_t thread_FILTER_tid;
+k_tid_t thread_CONTROL_tid;
 k_tid_t thread_PWM_tid;
 
 /* Semaphores for task synch */
 struct k_sem sem_a2manual;
 struct k_sem sem_a2automatic;
 struct k_sem sem_auto2filter;
-struct k_sem sem_manFilter2pwm;
+struct k_sem sem_filter2control;
+struct k_sem sem_manControl2pwm;
 
 /* Thread code prototypes */
 void thread_A_code(void *,void *,void *);
 void thread_MANUAL_code(void *,void *,void *);
 void thread_AUTOMATIC_code(void *,void *,void *);
 void thread_FILTER_code(void *,void *,void *);
+void thread_CONTROL_code(void *,void *,void *);
 void thread_PWM_code(void *,void *,void *);
 
 /* ADC definitions */
@@ -115,6 +121,7 @@ const struct device *adc_dev = NULL;
 static uint16_t adc_sample_buffer[BUFFER_SIZE];
 static uint16_t sample;
 static uint16_t highLevel_us;
+static uint16_t output=0;
 
 
 /* Vector to filter declaration */
@@ -124,7 +131,7 @@ int8_t index=-1;
 uint16_t average=0;
 uint16_t upperLevel=0;
 uint16_t lowerLevel=0;
-uint16_t pwmPeriod_us = 1000;       /* PWM period in us */
+uint16_t pwmPeriod_us = 500;       /* PWM period in us */
 
 /* Time variable declaration */
 uint8_t hours;
@@ -132,7 +139,7 @@ uint8_t minutes;
 uint8_t seconds;
 uint8_t days;
 
-uint16_t threshold=500; /* Luce che te orba!!! */
+uint16_t threshold=900; /* Luce che te orba!!! */
 
 /* Callback function and variables */
 volatile bool mode=0;
@@ -188,6 +195,7 @@ static int adc_sample(void)
 void main(void) {
     
     int ret=0;
+    int err=0;
 
     /* Local vars */
     const struct device *gpio0_dev;         /* Pointer to GPIO device structure */
@@ -220,6 +228,16 @@ void main(void) {
 	return;
     }
 
+    /* ADC setup: bind and initialize */
+    adc_dev = device_get_binding(DT_LABEL(ADC_NID));
+    if (!adc_dev) {
+        printk("ADC device_get_binding() failed\n");
+    } 
+    err = adc_channel_setup(adc_dev, &my_channel_cfg);
+    if (err) {
+        printk("adc_channel_setup() failed with error code %d\n", err);
+    }
+
     /* Set interrupt HW - which pin and event generate interrupt */
     ret = gpio_pin_interrupt_configure(gpio0_dev, BOARDBUT1, GPIO_INT_EDGE_TO_ACTIVE);
     gpio_init_callback(&but1_cb_data, but1press_cbfunction, BIT(BOARDBUT1));
@@ -238,8 +256,10 @@ void main(void) {
     /* Create and init semaphores */
     k_sem_init(&sem_a2manual, 0, 1);
     k_sem_init(&sem_a2automatic, 0, 1);
-    k_sem_init(&sem_manFilter2pwm, 0, 1);
     k_sem_init(&sem_auto2filter, 0, 1);
+    k_sem_init(&sem_filter2control, 0, 1);
+    k_sem_init(&sem_manControl2pwm, 0, 1);
+    
     
     /* Create tasks */
     thread_A_tid = k_thread_create(&thread_A_data, thread_A_stack,
@@ -257,6 +277,10 @@ void main(void) {
     thread_FILTER_tid = k_thread_create(&thread_FILTER_data, thread_FILTER_stack,
         K_THREAD_STACK_SIZEOF(thread_FILTER_stack), thread_FILTER_code,
         NULL, NULL, NULL, thread_FILTER_prio, 0, K_NO_WAIT);
+
+    thread_CONTROL_tid = k_thread_create(&thread_CONTROL_data, thread_CONTROL_stack,
+        K_THREAD_STACK_SIZEOF(thread_CONTROL_stack), thread_CONTROL_code,
+        NULL, NULL, NULL, thread_CONTROL_prio, 0, K_NO_WAIT);
 
     thread_PWM_tid = k_thread_create(&thread_PWM_data, thread_PWM_stack,
         K_THREAD_STACK_SIZEOF(thread_PWM_stack), thread_PWM_code,
@@ -313,7 +337,7 @@ void thread_A_code(void *argA,void *argB,void *argC)
         if(mode==1 && state==0){
             printk("Switch to MANUAL MODE\n");
             /* Reset the variables */
-            highLevel_us=0;
+            highLevel_us=250;
             up=0;
             down=0;
 
@@ -377,7 +401,7 @@ void thread_MANUAL_code(void *argA,void *argB,void *argC)
           printk("High level period is: %d us \n",highLevel_us);
 
          /*semaphore*/
-         k_sem_give(&sem_manFilter2pwm);
+         k_sem_give(&sem_manControl2pwm);
 
 
     }
@@ -393,18 +417,6 @@ void thread_AUTOMATIC_code(void *argA,void *argB,void *argC)
         k_sem_take(&sem_a2automatic,  K_FOREVER);
 
         printk("Task AUTOMATIC at time: %lld ms\t",k_uptime_get());
-
-        /* ADC setup: bind and initialize */
-        adc_dev = device_get_binding(DT_LABEL(ADC_NID));
-    	if (!adc_dev) {
-            printk("ADC device_get_binding() failed\n");
-        } 
-        err = adc_channel_setup(adc_dev, &my_channel_cfg);
-        if (err) {
-            printk("adc_channel_setup() failed with error code %d\n", err);
-        }
-
-        err=0;
 
         /* Get one sample, checks for errors and prints the values */
         err=adc_sample();
@@ -432,10 +444,9 @@ void thread_AUTOMATIC_code(void *argA,void *argB,void *argC)
 
 void thread_FILTER_code(void *argA,void *argB,void *argC)
 {
-    uint16_t output=0;
     uint16_t diff=0;
 
-    printk("Thread AUTOMATIC init\n");
+    printk("Thread FILTER init\n");
 
     while(1){
         k_sem_take(&sem_auto2filter,  K_FOREVER);
@@ -461,8 +472,8 @@ void thread_FILTER_code(void *argA,void *argB,void *argC)
         average=sum/10;
 	
         /* Samples value limits */
-        upperLevel=average*1.1;
-        lowerLevel=average*0.9;
+        upperLevel=average*1.05;
+        lowerLevel=average*0.95;
 
         uint16_t j=0;
 	
@@ -478,7 +489,7 @@ void thread_FILTER_code(void *argA,void *argB,void *argC)
         for(uint8_t i=0;i<10;i++){
             printk("\t %d",filteredSamples[i]);
         }
-        printk("\t");
+        printk("\n");
           
 
         uint16_t sum2=0;
@@ -491,12 +502,29 @@ void thread_FILTER_code(void *argA,void *argB,void *argC)
         if(j>0){
             output=sum2/j;
         }
-        
+    
+        /*semaphore*/
+        k_sem_give(&sem_filter2control);
+
+    }
+}
+
+void thread_CONTROL_code(void *argA,void *argB,void *argC)
+{
+    uint16_t diff=0;
+
+    printk("Thread CONTROL init\n");
+
+    while(1){
+        k_sem_take(&sem_filter2control, K_FOREVER);
+
+        printk("Task CONTROL at time: %lld ms\t",k_uptime_get());
+
         /* Set the intensity value of the LED */
-        if(output-threshold>=5 && diff<1024){
+        if(output-threshold>=2 && diff<1024){
             diff++;
         }
-        else if(output-threshold<5 && diff>0){
+        else if(output-threshold<2 && diff>0){
             diff--;
         }
         
@@ -506,21 +534,19 @@ void thread_FILTER_code(void *argA,void *argB,void *argC)
         }
 
         /* Safety value of PWM */
-        if(highLevel_us>1000){
-            highLevel_us=1000;
+        if(highLevel_us>pwmPeriod_us){
+            highLevel_us=pwmPeriod_us;
         }
         else if(highLevel_us<0){
             highLevel_us=0;
         }
         
-        printk("Output=    diff= %d+%d\n",output,diff);
-    
-        /*semaphore*/
-        k_sem_give(&sem_manFilter2pwm);
+        printk("Output= %d \t diff= %d\n",output,diff);
 
+        k_sem_give(&sem_manControl2pwm);
     }
-}
 
+}
 
 void thread_PWM_code(void *argA,void *argB,void *argC)
 {
@@ -540,7 +566,7 @@ void thread_PWM_code(void *argA,void *argB,void *argC)
     printk("Thread PWM init\n\n");
 
     while(1){
-        k_sem_take(&sem_manFilter2pwm,  K_FOREVER);
+        k_sem_take(&sem_manControl2pwm,  K_FOREVER);
 
         printk("Task PWM at time: %lld ms\n\n",k_uptime_get());
         //printk("highLevel_us value into PWM thread: %d \n\n",highLevel_us);
