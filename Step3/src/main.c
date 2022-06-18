@@ -143,8 +143,11 @@ static uint8_t minutes;
 static uint8_t seconds;
 static uint8_t days;
 
-/* Thereshold light intensity */
-uint16_t threshold=700; /* Luce che te orba!!! */
+/* Console vector variables */
+static uint16_t start_time[100]={0};
+static uint16_t stop_time[100]={0};
+static uint16_t intensity[100]={0};
+static uint16_t period_n=0;
 
 /* Callback function and variables */
 volatile bool mode=0;
@@ -200,7 +203,40 @@ static int adc_sample(void)
 	return ret;
 }
 
-
+int char2int(char ch){
+	switch(ch){
+	case '1':
+		return 1;
+		break;
+	case '2':
+		return 2;
+		break;
+	case '3':
+		return 3;
+		break;
+	case '4':
+		return 4;
+		break;
+	case '5':
+		return 5;
+		break;
+	case '6':
+		return 6;
+		break;
+	case '7':
+		return 7;
+		break;
+	case '8':
+		return 8;
+		break;
+	case '9':
+		return 9;
+		break;
+	case '0':
+		return 0;
+		break;
+	}
+}
 
 void main(void) {
     
@@ -325,28 +361,16 @@ void thread_A_code(void *argA,void *argB,void *argC)
 
     /* Compute next release instant */
     release_time = k_uptime_get() + thread_A_period;
-
-    /* Console initialization */
-    uint8_t c;
     
+    /* Console initialization */
+    char c='0';
+    char command[13]={0,0,0,0,0,0,0,0,0,0,0,0,0};
+        
     printk("Thread A init (periodic)\n");
 
     while(1){
         
         printk("Task A at time: %lld ms\t\t",k_uptime_get());        
-
-        if(cons==1){
-            char c=0;
-            printk("DIO LUPO CAN :\n");
-
-            while(c!='!'){
-                c = console_getchar();
-
-                console_putchar(c);
-            }
-            printk("La parola è: %d",(int) c);
-            cons=0;
-        }
 
         /* Timer implementation */
         seconds++;
@@ -364,6 +388,40 @@ void thread_A_code(void *argA,void *argB,void *argC)
             hours=0;
             days+=1;
         }
+
+        if(cons==1){
+            cons=0;
+            c='0';
+            for(int l=0;l<sizeof(command);l++){
+                command[l]=0;
+            }
+            printk("\n\n\nExample S1000120080 or T51000\n");
+            int i=0;
+            while(c!='!'){
+                c = console_getchar();
+                console_putchar(c);
+		command[i]=c;
+                i++;
+            }
+            if(command[0]=='S'){
+                start_time[period_n]= char2int(command[1])*1000 + char2int(command[2])*100 + char2int(command[3])*10+ char2int(command[4]);
+		stop_time[period_n]= char2int(command[5])*1000 + char2int(command[6])*100 + char2int(command[7])*10+ char2int(command[8]);
+		intensity[period_n]= char2int(command[9])*100 + char2int(command[10])*10 + char2int(command[11]);
+		period_n++;
+            }
+            else if(command[0]=='T'){
+		days=char2int(command[1]);
+		hours=char2int(command[2])*10+char2int(command[3]);
+		minutes=char2int(command[4])*10+char2int(command[5]);
+            }
+            else{
+                printk("\nScrivi ben loamaro!!!\n");
+            }
+            release_time = k_uptime_get() + thread_A_period;
+
+        }
+
+
         /* Print the time */
         printk("DAY: %d\t",days);
         printk("TIME: %d:%d:%d\n",hours,minutes,seconds);
@@ -549,10 +607,6 @@ void thread_CONTROL_code(void *argA,void *argB,void *argC)
 {
     uint16_t diff=0;
     uint32_t actualTime=0;
-    int start_time[2]={1,3};
-    int stop_time[2]={3,25};
-    int intensity[2]={30,80};
-    int period_n=2;
     int currentPeriod=0;
 
     printk("Thread CONTROL init\n");
@@ -576,8 +630,8 @@ void thread_CONTROL_code(void *argA,void *argB,void *argC)
         printk("CurrentPeriod: %d\t",currentPeriod);
 
         if(currentPeriod!=-1){
-            //lightIntensity=intensity[currentPeriod];
-            printk("Intensity: %d\t",intensity[currentPeriod]);
+            printk("Intensity: %d %\t",intensity[currentPeriod]);
+
             /* Set the intensity value of the LED */
             if(output-(intensity[currentPeriod]*1023/100)>=2 && diff>0){
                 diff--;
