@@ -556,25 +556,6 @@ rule C_STATIC_LIBRARY_LINKER__modules__hal_nordic__nrfx_
 #############################################
 # Rule for compiling C files.
 
-rule C_COMPILER__modules__segger_
-  depfile = $DEP_FILE
-  deps = gcc
-  command = ccache /home/giacomo/gnuarmemb/gcc-arm-none-eabi-9-2019-q4-major/bin/arm-none-eabi-gcc $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
-  description = Building C object $out
-
-
-#############################################
-# Rule for linking C static library.
-
-rule C_STATIC_LIBRARY_LINKER__modules__segger_
-  command = $PRE_LINK && ccache /snap/cmake/1088/bin/cmake -E rm -f $TARGET_FILE && ccache /home/giacomo/gnuarmemb/gcc-arm-none-eabi-9-2019-q4-major/bin/arm-none-eabi-ar qc $TARGET_FILE $LINK_FLAGS $in && ccache /home/giacomo/gnuarmemb/gcc-arm-none-eabi-9-2019-q4-major/bin/arm-none-eabi-ranlib $TARGET_FILE && $POST_BUILD
-  description = Linking C static library $TARGET_FILE
-  restat = $RESTAT
-
-
-#############################################
-# Rule for compiling C files.
-
 rule C_COMPILER__kernel_
   depfile = $DEP_FILE
   deps = gcc

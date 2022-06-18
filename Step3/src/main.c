@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <hal/nrf_saadc.h> /* ADC includes */
-
+#include <console/console.h>  /* Console includs */
 
 /* Thread scheduling priority */
 #define thread_A_prio 1
@@ -101,11 +101,13 @@ void thread_PWM_code(void *,void *,void *);
 #define BOARDBUT1 0xb /* Pin at which BUT1 is connected. Addressing is direct (i.e., pin number) */
 #define BOARDBUT2 0xc /* Pin at which BUT2 is connected. Addressing is direct (i.e., pin number) */
 #define BOARDBUT3 0x18 /* Pin at which BUT3 is connected. Addressing is direct (i.e., pin number) */
+#define BOARDBUT4 0x19 /* Pin at which BUT4 is connected. Addressing is direct (i.e., pin number) */
 
 /* Int related declarations */
 static struct gpio_callback but1_cb_data; /* Callback structure */
 static struct gpio_callback but2_cb_data; /* Callback structure */
 static struct gpio_callback but3_cb_data; /* Callback structure */
+static struct gpio_callback but4_cb_data; /* Callback structure */
 
 /* ADC channel configuration */
 static const struct adc_channel_cfg my_channel_cfg = {
@@ -123,7 +125,6 @@ static uint16_t sample;
 static uint16_t highLevel_us;
 static uint16_t output=0;
 
-
 /* Vector to filter declaration */
 uint16_t samples[SIZE]={0,0,0,0,0,0,0,0,0,0};
 uint16_t filteredSamples[SIZE]={0,0,0,0,0,0,0,0,0,0};
@@ -133,13 +134,17 @@ uint16_t upperLevel=0;
 uint16_t lowerLevel=0;
 uint16_t pwmPeriod_us = 500;       /* PWM period in us */
 
-/* Time variable declaration */
-uint8_t hours;
-uint8_t minutes;
-uint8_t seconds;
-uint8_t days;
+/* Variable initialization to console */
+static const char prompt[10];
 
-uint16_t threshold=900; /* Luce che te orba!!! */
+/* Time variable declaration */
+static uint8_t hours;
+static uint8_t minutes;
+static uint8_t seconds;
+static uint8_t days;
+
+/* Thereshold light intensity */
+uint16_t threshold=700; /* Luce che te orba!!! */
 
 /* Callback function and variables */
 volatile bool mode=0;
@@ -147,6 +152,8 @@ volatile bool up=0;
 volatile bool down=0;
 
 bool state=0;
+
+static int cons=0;
 
 /* Routine related to the interrupt for mode on/off */
 void but1press_cbfunction(){
@@ -166,6 +173,9 @@ void but3press_cbfunction(){
     mode=1;
 }
 
+void but4press_cbfunction(){
+    cons=1;
+}
 
 static int adc_sample(void)
 {
@@ -227,6 +237,11 @@ void main(void) {
         printk("Error %d: Failed to configure BUT 3 \n\r", ret);
 	return;
     }
+    ret = gpio_pin_configure(gpio0_dev, BOARDBUT4, GPIO_INPUT | GPIO_PULL_UP);
+    if (ret < 0) {
+        printk("Error %d: Failed to configure BUT 4 \n\r", ret);
+	return;
+    }
 
     /* ADC setup: bind and initialize */
     adc_dev = device_get_binding(DT_LABEL(ADC_NID));
@@ -237,6 +252,12 @@ void main(void) {
     if (err) {
         printk("adc_channel_setup() failed with error code %d\n", err);
     }
+
+    /* Init console service */
+    console_init();
+
+    /* Output a string */ 
+    console_write(NULL, prompt, sizeof(prompt) - 1);
 
     /* Set interrupt HW - which pin and event generate interrupt */
     ret = gpio_pin_interrupt_configure(gpio0_dev, BOARDBUT1, GPIO_INT_EDGE_TO_ACTIVE);
@@ -252,6 +273,10 @@ void main(void) {
     gpio_init_callback(&but3_cb_data, but3press_cbfunction, BIT(BOARDBUT3));
     gpio_add_callback(gpio0_dev, &but3_cb_data);
 
+    /* Set interrupt HW - which pin and event generate interrupt */
+    ret = gpio_pin_interrupt_configure(gpio0_dev, BOARDBUT4, GPIO_INT_EDGE_TO_ACTIVE);
+    gpio_init_callback(&but4_cb_data, but4press_cbfunction, BIT(BOARDBUT4));
+    gpio_add_callback(gpio0_dev, &but4_cb_data);
 
     /* Create and init semaphores */
     k_sem_init(&sem_a2manual, 0, 1);
@@ -289,7 +314,9 @@ void main(void) {
     return;
 } 
 
-        
+
+
+
 void thread_A_code(void *argA,void *argB,void *argC)
 {
 
@@ -299,19 +326,28 @@ void thread_A_code(void *argA,void *argB,void *argC)
     /* Compute next release instant */
     release_time = k_uptime_get() + thread_A_period;
 
+    /* Console initialization */
+    uint8_t c;
+    
     printk("Thread A init (periodic)\n");
 
     while(1){
         
-        /* 
-         * 1- Set the date by terminal
-         * 2- Increase the time and the date periodicaly
-         * 3- Switch from one mode to other one (automatic ---> manual / manual ---> automatic)
-         * 
-         */
-
         printk("Task A at time: %lld ms\t\t",k_uptime_get());        
-        
+
+        if(cons==1){
+            char c=0;
+            printk("DIO LUPO CAN :\n");
+
+            while(c!='!'){
+                c = console_getchar();
+
+                console_putchar(c);
+            }
+            printk("La parola è: %d",(int) c);
+            cons=0;
+        }
+
         /* Timer implementation */
         seconds++;
         if(seconds==60){
@@ -337,7 +373,7 @@ void thread_A_code(void *argA,void *argB,void *argC)
         if(mode==1 && state==0){
             printk("Switch to MANUAL MODE\n");
             /* Reset the variables */
-            highLevel_us=250;
+            highLevel_us=pwmPeriod_us/4;
             up=0;
             down=0;
 
@@ -373,7 +409,7 @@ void thread_A_code(void *argA,void *argB,void *argC)
 
 void thread_MANUAL_code(void *argA,void *argB,void *argC)
 {
-    int ret=0;
+    uint16_t step=pwmPeriod_us/20;
 
     printk("Thread MANUAL init\n");
 
@@ -383,16 +419,17 @@ void thread_MANUAL_code(void *argA,void *argB,void *argC)
         printk("Task MANUAL at time: %lld ms\t\t",k_uptime_get());
         //printk("Value of variable up: %d\n ",up);
 
+
         if(up==1){
-              if(highLevel_us<=950){  /* DA sistemare i limiti e il passo !!!! */
-                  highLevel_us+=50;
+              if(highLevel_us<=pwmPeriod_us-step){
+                  highLevel_us+=step;
               }
               up=0;
               k_msleep(5);
           }
           else if(down==1){
               if(highLevel_us>0){  
-                  highLevel_us-=50;
+                  highLevel_us-=step;
               }
               down=0;
               k_msleep(5);
@@ -429,7 +466,7 @@ void thread_AUTOMATIC_code(void *argA,void *argB,void *argC)
                 sample=0;  /* Safety value */
             }
             else {
-                sample=adc_sample_buffer[0];
+                sample=1023-adc_sample_buffer[0];
                 printk("Sample: %4u\n",sample);
              }
         }
@@ -444,7 +481,6 @@ void thread_AUTOMATIC_code(void *argA,void *argB,void *argC)
 
 void thread_FILTER_code(void *argA,void *argB,void *argC)
 {
-    uint16_t diff=0;
 
     printk("Thread FILTER init\n");
 
@@ -512,6 +548,12 @@ void thread_FILTER_code(void *argA,void *argB,void *argC)
 void thread_CONTROL_code(void *argA,void *argB,void *argC)
 {
     uint16_t diff=0;
+    uint32_t actualTime=0;
+    int start_time[2]={1,3};
+    int stop_time[2]={3,25};
+    int intensity[2]={30,80};
+    int period_n=2;
+    int currentPeriod=0;
 
     printk("Thread CONTROL init\n");
 
@@ -520,19 +562,39 @@ void thread_CONTROL_code(void *argA,void *argB,void *argC)
 
         printk("Task CONTROL at time: %lld ms\t",k_uptime_get());
 
-        /* Set the intensity value of the LED */
-        if(output-threshold>=2 && diff<1024){
-            diff++;
+        actualTime=hours*100+minutes;
+        
+        int currentPeriod=-1;
+
+        for(int j=0;j<period_n;j++){
+            if(actualTime>=start_time[j] && actualTime<stop_time[j]){
+                currentPeriod=j;
+                j=period_n;
+            }
         }
-        else if(output-threshold<2 && diff>0){
-            diff--;
+
+        printk("CurrentPeriod: %d\t",currentPeriod);
+
+        if(currentPeriod!=-1){
+            //lightIntensity=intensity[currentPeriod];
+            printk("Intensity: %d\t",intensity[currentPeriod]);
+            /* Set the intensity value of the LED */
+            if(output-(intensity[currentPeriod]*1023/100)>=2 && diff>0){
+                diff--;
+            }
+            else if(output-(intensity[currentPeriod]*1023/100)<2 && diff<1024){
+                diff++;
+            }
+
+            if(output>0){
+                highLevel_us=pwmPeriod_us*(diff)/1023;
+            }
+        }
+        else{
+            highLevel_us=0;
         }
         
-
-        if(output>0){
-            highLevel_us=pwmPeriod_us*(diff)/1023;
-        }
-
+        
         /* Safety value of PWM */
         if(highLevel_us>pwmPeriod_us){
             highLevel_us=pwmPeriod_us;

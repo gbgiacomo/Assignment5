@@ -86,6 +86,8 @@
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/debug/CMakeFiles/rebuild_cache.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/logging/CMakeFiles/edit_cache.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/logging/CMakeFiles/rebuild_cache.dir
+/home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/console/CMakeFiles/edit_cache.dir
+/home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/console/CMakeFiles/rebuild_cache.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/fs/CMakeFiles/edit_cache.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/fs/CMakeFiles/rebuild_cache.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/ipc/CMakeFiles/edit_cache.dir
@@ -251,7 +253,6 @@
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/modules/nrf_hw_models/CMakeFiles/rebuild_cache.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/modules/open-amp/CMakeFiles/edit_cache.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/modules/open-amp/CMakeFiles/rebuild_cache.dir
-/home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/modules/segger/CMakeFiles/modules__segger.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/modules/segger/CMakeFiles/edit_cache.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/modules/segger/CMakeFiles/rebuild_cache.dir
 /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/modules/tinycbor/CMakeFiles/edit_cache.dir

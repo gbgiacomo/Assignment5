@@ -1,7 +1,8 @@
-modules/segger/CMakeFiles/modules__segger.dir/SEGGER_RTT_zephyr.c.obj: \
- /home/giacomo/ncs/zephyr/modules/segger/SEGGER_RTT_zephyr.c \
+zephyr/CMakeFiles/zephyr.dir/subsys/console/tty.c.obj: \
+ /home/giacomo/ncs/zephyr/subsys/console/tty.c \
  /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/include/generated/autoconf.h \
  /home/giacomo/ncs/zephyr/include/toolchain/zephyr_stdint.h \
+ /home/giacomo/ncs/zephyr/include/zephyr.h \
  /home/giacomo/ncs/zephyr/include/kernel.h \
  /home/giacomo/ncs/zephyr/include/kernel_includes.h \
  /home/giacomo/gnuarmemb/gcc-arm-none-eabi-9-2019-q4-major/lib/gcc/arm-none-eabi/9.2.1/include/stddef.h \
@@ -120,7 +121,15 @@ modules/segger/CMakeFiles/modules__segger.dir/SEGGER_RTT_zephyr.c.obj: \
  /home/giacomo/ncs/zephyr/include/tracing/tracing.h \
  /home/giacomo/ncs/zephyr/include/tracing/tracking.h \
  /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/include/generated/syscalls/kernel.h \
+ /home/giacomo/ncs/zephyr/include/drivers/uart.h \
+ /home/giacomo/ncs/zephyr/include/device.h \
  /home/giacomo/ncs/zephyr/include/init.h \
- /home/giacomo/ncs/modules/debug/segger/SEGGER/SEGGER_RTT.h \
- /home/giacomo/ncs/modules/debug/segger/Config/SEGGER_RTT_Conf.h \
- /home/giacomo/ncs/zephyr/lib/libc/minimal/include/stdlib.h
+ /home/giacomo/ncs/zephyr/include/sys/device_mmio.h \
+ /home/giacomo/ncs/zephyr/include/sys/mem_manage.h \
+ /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/include/generated/syscalls/mem_manage.h \
+ /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/include/generated/device_extern.h \
+ /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/include/generated/syscalls/device.h \
+ /home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/include/generated/syscalls/uart.h \
+ /home/giacomo/ncs/zephyr/include/console/tty.h \
+ /home/giacomo/ncs/zephyr/lib/libc/minimal/include/sys/types.h \
+ /home/giacomo/ncs/zephyr/lib/libc/minimal/include/sys/_types.h

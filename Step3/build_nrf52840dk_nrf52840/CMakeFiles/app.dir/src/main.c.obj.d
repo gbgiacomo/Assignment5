@@ -143,4 +143,7 @@ CMakeFiles/app.dir/src/main.c.obj: \
  /home/giacomo/ncs/zephyr/include/timing/timing.h \
  /home/giacomo/ncs/zephyr/lib/libc/minimal/include/stdlib.h \
  /home/giacomo/ncs/zephyr/lib/libc/minimal/include/stdio.h \
- /home/giacomo/ncs/modules/hal/nordic/nrfx/hal/nrf_saadc.h
+ /home/giacomo/ncs/modules/hal/nordic/nrfx/hal/nrf_saadc.h \
+ /home/giacomo/ncs/zephyr/include/console/console.h \
+ /home/giacomo/ncs/zephyr/lib/libc/minimal/include/sys/types.h \
+ /home/giacomo/ncs/zephyr/lib/libc/minimal/include/sys/_types.h

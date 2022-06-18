@@ -49,6 +49,11 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
+  include("/home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/console/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
   include("/home/giacomo/Desktop/SETR_lab/Assignment_5/Assignment5/Step3/build_nrf52840dk_nrf52840/zephyr/subsys/fs/cmake_install.cmake")
 endif()
 
