@@ -123,7 +123,7 @@ const struct device *adc_dev = NULL;
 static uint16_t adc_sample_buffer[BUFFER_SIZE];
 static uint16_t sample;
 static uint16_t highLevel_us;
-static uint16_t output=0;
+static uint16_t output;
 
 /* Vector to filter declaration */
 uint16_t samples[SIZE]={0,0,0,0,0,0,0,0,0,0};
@@ -153,10 +153,11 @@ static uint16_t period_n=0;
 volatile bool mode=0;
 volatile bool up=0;
 volatile bool down=0;
-
+volatile bool cons=0;
+volatile bool dark=0;
 bool state=0;
 
-static int cons=0;
+
 
 /* Routine related to the interrupt for mode on/off */
 void but1press_cbfunction(){
@@ -176,7 +177,9 @@ void but3press_cbfunction(){
     mode=1;
 }
 
+/* Routine related to the interrupt for set the clock time and the periods */
 void but4press_cbfunction(){
+    dark=1;
     cons=1;
 }
 
@@ -236,6 +239,33 @@ int char2int(char ch){
 		return 0;
 		break;
 	}
+}
+
+void printDays(uint8_t day){
+    switch(day){
+        case 0:
+		printk("DAY: SUNDAY\t");
+		break;
+	case 1:
+		printk("DAY: MONDEY\t");
+		break;
+	case 2:
+		printk("DAY: TUESDAY\t");
+		break;
+	case 3:
+		printk("DAY: WEDNESDAY\t");
+		break;
+	case 4:
+		printk("DAY: THURSDAY\t");
+		break;
+	case 5:
+		printk("DAY: FRIDAY\t");
+		break;
+	case 6:
+		printk("DAY: SATURDAY\t");
+		break;
+	}
+    return;
 }
 
 void main(void) {
@@ -357,14 +387,16 @@ void thread_A_code(void *argA,void *argB,void *argC)
 {
 
     /* Timing variables to control task periodicity */
-    int64_t fin_time=0, release_time=0;
+    int64_t fin_time=0, release_time=0, currentTime=0;
+
+    uint16_t i=0;
 
     /* Compute next release instant */
     release_time = k_uptime_get() + thread_A_period;
     
     /* Console initialization */
     char c='0';
-    char command[13]={0,0,0,0,0,0,0,0,0,0,0,0,0};
+    char command[15]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         
     printk("Thread A init (periodic)\n");
 
@@ -389,14 +421,36 @@ void thread_A_code(void *argA,void *argB,void *argC)
             days+=1;
         }
 
-        if(cons==1){
+        days=days%7;
+        
+        if(cons && dark){
+            highLevel_us=0;
+            k_sem_give(&sem_manControl2pwm);
+        }
+        else if(cons && !dark){
             cons=0;
             c='0';
             for(int l=0;l<sizeof(command);l++){
                 command[l]=0;
             }
-            printk("\n\n\nExample S1000120080 or T51000\n");
-            int i=0;
+            
+            printk("\n\n\n\nDigit a string to set calendar and clock time: \n");
+            printk("TDHHMM!\n");
+            printk("T= setting the clock time\nD= day of the week (from 0= SUN to 6= SAT)\nHH= hour of the day (0-24)\nMM= minute\n != end of the command\n");
+            printk("Example: T51035! ---> Set the timer on friday at 10:35\n\n");
+
+            printk("\n\nDigit a string to set the ON/OFF periods: \n");
+            printk("SDHHMMHHMM!\n");
+            printk("S= setting the ON/OFF period\nD= day of the period (from 0= SUN to 6= SAT)\nHH= hour of the day (0-24)\nMM= minute\n!= end of the command\n");
+            printk("Example: S5220060500080 ---> Set the timer on friday at 10:35\n\n");
+
+            printk("Digit the string:\t");
+
+
+            i=0;
+
+            currentTime=k_uptime_get(); /* Save the current time */
+
             while(c!='!'){
                 c = console_getchar();
                 console_putchar(c);
@@ -404,10 +458,17 @@ void thread_A_code(void *argA,void *argB,void *argC)
                 i++;
             }
             if(command[0]=='S'){
-                start_time[period_n]= char2int(command[1])*1000 + char2int(command[2])*100 + char2int(command[3])*10+ char2int(command[4]);
-		stop_time[period_n]= char2int(command[5])*1000 + char2int(command[6])*100 + char2int(command[7])*10+ char2int(command[8]);
-		intensity[period_n]= char2int(command[9])*100 + char2int(command[10])*10 + char2int(command[11]);
+                start_time[period_n]= char2int(command[1])*10000 + char2int(command[2])*1000 + char2int(command[3])*100 + char2int(command[4])*10+ char2int(command[5]);
+		stop_time[period_n]= char2int(command[6])*10000 + char2int(command[7])*1000 + char2int(command[8])*100 + char2int(command[9])*10+ char2int(command[10]);
+		intensity[period_n]= char2int(command[11])*100 + char2int(command[12])*10 + char2int(command[13]);
 		period_n++;
+
+                /* Update the lost clock time during the console */
+                currentTime=k_uptime_get()-currentTime;
+                seconds=(seconds+currentTime/1000)%60;
+                minutes=(minutes+currentTime/(1000*60))%60;
+                hours=(hours+currentTime/(1000*60*60))%60;
+                
             }
             else if(command[0]=='T'){
 		days=char2int(command[1]);
@@ -417,13 +478,12 @@ void thread_A_code(void *argA,void *argB,void *argC)
             else{
                 printk("\nScrivi ben loamaro!!!\n");
             }
-            release_time = k_uptime_get() + thread_A_period;
-
+            release_time = k_uptime_get() + thread_A_period;            
         }
 
 
         /* Print the time */
-        printk("DAY: %d\t",days);
+        printDays(days);
         printk("TIME: %d:%d:%d\n",hours,minutes,seconds);
 
 
@@ -616,7 +676,7 @@ void thread_CONTROL_code(void *argA,void *argB,void *argC)
 
         printk("Task CONTROL at time: %lld ms\t",k_uptime_get());
 
-        actualTime=hours*100+minutes;
+        actualTime=days*10000+hours*100+minutes;
         
         int currentPeriod=-1;
 
@@ -693,6 +753,10 @@ void thread_PWM_code(void *argA,void *argB,void *argC)
         if (ret) {
             printk("Error %d: failed to set pulse width\n", ret);
             return;
+        }
+
+        if(dark){
+            dark=false;
         }
 
     }
