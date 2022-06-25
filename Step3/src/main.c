@@ -1,14 +1,18 @@
-/** Implementation of the manual mode of the Assigment 5
+/** @file main.c
+ * @brief Contains the implementation of the Assignment5
+ *
+ * The goal of this code is set the light intensity
+ * of the enviromental at a certain threshold,
+ * preaviusly defined by the user. In the manual 
+ * mode the user can sets directly the light intensity 
+ * of the LED, through the two switches.
+ * Otherwise, in the automatic mode, LED is power by
+ * the control algorithm.
+ * The system work in real-time.
  * 
- *  Bego Giacomo, Longo Mattia - 14/06/2022
- *  
- *  Description...
- *
- *  Manual mode:
- *    - BUTTON 1: Increase the light intensity of the LED
- *    - BUTTON 2: Decrease the light intensity of the LED
- *    - BUTTON 3: Change the system from automatic to manual mode an viceversa
- *
+ * @author Mattia Longo and Giacomo Bego
+ * @date 25 Jun 2022
+ * @bug No known bugs
  */
 
 
@@ -157,31 +161,75 @@ volatile bool cons=0;
 volatile bool dark=0;
 bool state=0;
 
+/**
+ * @brief but1press_cbfunction function run ISR for browse up
+ *
+ * but1press_cbfunction is the service
+ * routine related to the interrupt
+ * for browsing up. It just change
+ * the state of the volatile "up" variable
+ * 
+ */
 
-
-/* Routine related to the interrupt for mode on/off */
 void but1press_cbfunction(){
     //printk("Button 1 pressed\n");
     up=1;
 }
 
-/* Routine related to the interrupt for increase intensity */
+/**
+ * @brief but2press_cbfunction function run ISR for browse down
+ *
+ * but2press_cbfunction is the service
+ * routine related to the interrupt
+ * for browsing up. It just change
+ * the state of the volatile "down" variable
+ * 
+ */
+
 void but2press_cbfunction(){
     //printk("Button 2 pressed\n");
     down=1;
 }
 
-/* Routine related to the interrupt for decrease intensity */
+/**
+ * @brief but3press_cbfunction function run ISR for changing mode
+ *
+ * but3press_cbfunction is the service
+ * routine related to the interrupt
+ * for changing mode. It just modify
+ * the state of the volatile "mode" variable
+ * 
+ */
+
 void but3press_cbfunction(){
     //printk("Button 3 pressed\n");
     mode=1;
 }
 
-/* Routine related to the interrupt for set the clock time and the periods */
+/**
+ * @brief but4press_cbfunction function run ISR for activating the console
+ *
+ * but4press_cbfunction is the service
+ * routine related to the interrupt
+ * for activating console. It just modify
+ * the state of the volatile "dark" and "cons" variables
+ * 
+ */
+
 void but4press_cbfunction(){
     dark=1;
     cons=1;
 }
+
+/**
+ * @brief adc_sample function read the input voltage
+ *
+ * ADC setting and acquisition of the input voltage.
+ * In this case the resolution has been setted to 10 bit (0-1023).
+ * 
+ * \author Mattia Longo and Giacomo Bego
+ * \return integer value, representing the acquired sample
+ */
 
 static int adc_sample(void)
 {
@@ -206,8 +254,21 @@ static int adc_sample(void)
 	return ret;
 }
 
+/**
+ * @brief char2int function convert numerical char to int
+ *
+ * It convert the numerical char variables to integer values 
+ * 
+ * \author Mattia Longo and Giacomo Bego
+ * \param[ch] char variable to converter (only value from 0 to 9)
+ * \return integer value converted
+ */
+
 int char2int(char ch){
 	switch(ch){
+        case '0':
+		return 0;
+		break;
 	case '1':
 		return 1;
 		break;
@@ -235,11 +296,17 @@ int char2int(char ch){
 	case '9':
 		return 9;
 		break;
-	case '0':
-		return 0;
-		break;
 	}
 }
+
+/**
+ * @brief printDays function print the days
+ *
+ * This function print the days of the week to console 
+ * 
+ * \author Mattia Longo and Giacomo Bego
+ * \param[day] integer value that indicates the day from 0 to 6
+ */
 
 void printDays(uint8_t day){
     switch(day){
@@ -247,7 +314,7 @@ void printDays(uint8_t day){
 		printk("DAY: SUNDAY\t");
 		break;
 	case 1:
-		printk("DAY: MONDEY\t");
+		printk("DAY: MONDAY\t");
 		break;
 	case 2:
 		printk("DAY: TUESDAY\t");
@@ -267,6 +334,84 @@ void printDays(uint8_t day){
 	}
     return;
 }
+
+/**
+ * @brief userSetup function activate the console
+ *
+ * Activate the user interface console to setup the ON/OFF period and the current time.
+ * 
+ * \author Mattia Longo and Giacomo Bego
+ */
+
+void userSetup(){
+
+    uint16_t i=0;
+    uint64_t currentTime=0;
+
+    /* Console initialization */
+    char c='0';
+    char command[15]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        
+    printk("Task CONSOLE at time: %lld ms\t\t",k_uptime_get());
+        
+    for(int l=0;l<sizeof(command);l++){
+        command[l]=0;
+    }
+            
+    printk("\n\n\n\nDigit a string to set calendar and clock time: \n");
+    printk("TDHHMM!\n");
+    printk("T= setting the clock time\nD= day of the week (from 0= SUN to 6= SAT)\nHH= hour of the day (0-24)\nMM= minute\n != end of the command\n");
+    printk("Example: T51035! ---> Set the timer on friday at 10:35\n\n");
+
+    printk("\n\nDigit a string to set the ON/OFF period: \n");
+    printk("SDHHMMDHHMMIII!\n");
+    printk("S= setting the ON/OFF period\nD= day when the period starts (from 0= SUN to 6= SAT)\nHH= hour when the period starts (0-24)\nMM= minute when the period starts\n");
+    printk("D= day when the period ends (from 0= SUN to 6= SAT)\nHH= hour when the period ends (0-24)\nMM= minute when the period ends\n!= end of the command\n");
+    printk("Example: S5220060500080 ---> Set the period fron friday at 22:00 to saturday at 05:00 with 80 % of light intensity\n\n");
+
+    printk("Digit the string:\t");
+
+    currentTime=k_uptime_get(); /* Save the current time */
+
+    while(c!='!'){
+        c = console_getchar();
+        console_putchar(c);
+        command[i]=c;
+        i++;
+    }
+
+    if(command[0]=='S'){
+        start_time[period_n]= char2int(command[1])*10000 + char2int(command[2])*1000 + char2int(command[3])*100 + char2int(command[4])*10+ char2int(command[5]);
+        stop_time[period_n]= char2int(command[6])*10000 + char2int(command[7])*1000 + char2int(command[8])*100 + char2int(command[9])*10+ char2int(command[10]);
+        intensity[period_n]= char2int(command[11])*100 + char2int(command[12])*10 + char2int(command[13]);
+        period_n++;
+
+        /* Update the lost clock time during the console */
+        currentTime=k_uptime_get()-currentTime;
+        seconds=(seconds+currentTime/1000)%60;
+        minutes=(minutes+currentTime/(1000*60))%60;
+        hours=(hours+currentTime/(1000*60*60))%60;
+                
+    }
+    else if(command[0]=='T'){
+        days=char2int(command[1]);
+        hours=char2int(command[2])*10+char2int(command[3]);
+        minutes=char2int(command[4])*10+char2int(command[5]);
+    }
+    else{
+        printk("\n Command don't exists. Write the command 'T' or 'S' in the string \n");
+    }
+        return;
+}
+
+/**
+ * @brief main function run project
+ *
+ * main function sets the ADC, 
+ * creates the tasks and
+ * initilizes the semaphores.
+ * 
+ */
 
 void main(void) {
     
@@ -381,27 +526,34 @@ void main(void) {
 } 
 
 
+/* THREAD IMPLEMENTATION */
 
+/**
+ * @brief thread_A_code function implement the clock time 
+ *
+ * 
+ * This function occurs every 100 ms.
+ * The aims are increment the current hour, date and 
+ * verify the function mode selected.
+ * The user interface is activate cecking the switch state.
+ *
+ * \param[*argA, *argB, *argC] void pointer parameters (not used in this project)
+ * \return void function-> it does not return anything
+ * 
+ */
 
 void thread_A_code(void *argA,void *argB,void *argC)
 {
 
     /* Timing variables to control task periodicity */
-    int64_t fin_time=0, release_time=0, currentTime=0;
-
-    uint16_t i=0;
+    int64_t fin_time=0, release_time=0, init_time=0;
 
     /* Compute next release instant */
     release_time = k_uptime_get() + thread_A_period;
-    
-    /* Console initialization */
-    char c='0';
-    char command[15]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        
-    printk("Thread A init (periodic)\n");
 
     while(1){
-        
+        init_time=k_uptime_get();
+
         printk("Task A at time: %lld ms\t\t",k_uptime_get());        
 
         /* Timer implementation */
@@ -422,74 +574,27 @@ void thread_A_code(void *argA,void *argB,void *argC)
         }
 
         days=days%7;
-        
+
+        /* Accours when console switch is pressed */
         if(cons && dark){
             highLevel_us=0;
             k_sem_give(&sem_manControl2pwm);
         }
         else if(cons && !dark){
             cons=0;
-            c='0';
-            for(int l=0;l<sizeof(command);l++){
-                command[l]=0;
-            }
-            
-            printk("\n\n\n\nDigit a string to set calendar and clock time: \n");
-            printk("TDHHMM!\n");
-            printk("T= setting the clock time\nD= day of the week (from 0= SUN to 6= SAT)\nHH= hour of the day (0-24)\nMM= minute\n != end of the command\n");
-            printk("Example: T51035! ---> Set the timer on friday at 10:35\n\n");
-
-            printk("\n\nDigit a string to set the ON/OFF periods: \n");
-            printk("SDHHMMHHMM!\n");
-            printk("S= setting the ON/OFF period\nD= day of the period (from 0= SUN to 6= SAT)\nHH= hour of the day (0-24)\nMM= minute\n!= end of the command\n");
-            printk("Example: S5220060500080 ---> Set the timer on friday at 10:35\n\n");
-
-            printk("Digit the string:\t");
-
-
-            i=0;
-
-            currentTime=k_uptime_get(); /* Save the current time */
-
-            while(c!='!'){
-                c = console_getchar();
-                console_putchar(c);
-		command[i]=c;
-                i++;
-            }
-            if(command[0]=='S'){
-                start_time[period_n]= char2int(command[1])*10000 + char2int(command[2])*1000 + char2int(command[3])*100 + char2int(command[4])*10+ char2int(command[5]);
-		stop_time[period_n]= char2int(command[6])*10000 + char2int(command[7])*1000 + char2int(command[8])*100 + char2int(command[9])*10+ char2int(command[10]);
-		intensity[period_n]= char2int(command[11])*100 + char2int(command[12])*10 + char2int(command[13]);
-		period_n++;
-
-                /* Update the lost clock time during the console */
-                currentTime=k_uptime_get()-currentTime;
-                seconds=(seconds+currentTime/1000)%60;
-                minutes=(minutes+currentTime/(1000*60))%60;
-                hours=(hours+currentTime/(1000*60*60))%60;
-                
-            }
-            else if(command[0]=='T'){
-		days=char2int(command[1]);
-		hours=char2int(command[2])*10+char2int(command[3]);
-		minutes=char2int(command[4])*10+char2int(command[5]);
-            }
-            else{
-                printk("\nScrivi ben loamaro!!!\n");
-            }
-            release_time = k_uptime_get() + thread_A_period;            
+            userSetup();
+            release_time = k_uptime_get() + thread_A_period;         
         }
 
 
         /* Print the time */
         printDays(days);
-        printk("TIME: %d:%d:%d\n",hours,minutes,seconds);
+        printk("TIME: %d:%d:%d\t",hours,minutes,seconds);
 
 
         /* Manual/Automatic mode */
         if(mode==1 && state==0){
-            printk("Switch to MANUAL MODE\n");
+            printk("Switch to MANUAL MODE\t");
             /* Reset the variables */
             highLevel_us=pwmPeriod_us/4;
             up=0;
@@ -499,44 +604,63 @@ void thread_A_code(void *argA,void *argB,void *argC)
             mode=0;
         }
         else if(mode==1 && state==1){
-            printk("Switch to AUTOMATIC MODE\n");
+            printk("Switch to AUTOMATIC MODE\t");
             highLevel_us=0;
             state=0;
             mode=0;
         }
-        k_msleep(5);
 
         /*semaphore*/
         if(state==0){
+            printk("Execution time task A: %lld ms\n",k_uptime_get()-init_time);
             k_sem_give(&sem_a2automatic);
         }
         else if(state==1){
+            printk("Execution time task A: %lld ms\n",k_uptime_get()-init_time);
             k_sem_give(&sem_a2manual);
         }
 
         
+        
         /* Wait for next release instant */ 
         fin_time = k_uptime_get();
-        if( fin_time < release_time) {
+        if(fin_time < release_time) {
             k_msleep(release_time - fin_time);
             release_time += thread_A_period;
         }
     }
 }
 
+/**
+ * @brief thread_MANUAL_code function implement the manual mode 
+ *
+ * When the user press the button 3 this thread occurs.
+ * The aim is increase and deacrease the light intensity 
+ * of the LED, through two switches ("up" and "down").
+ * Pressing them, the high level period of the PWM change.
+ * This initial value is taken from the shared memory.
+ * The output is saved in a shared memory (global variable)
+ * and passed to the LED power task by another semaphore.
+ * 
+ * \param[*argA, *argB, *argC] void pointer parameters (not used in this project)
+ * \return void function-> it does not return anything
+ * 
+ */
 
 void thread_MANUAL_code(void *argA,void *argB,void *argC)
 {
     uint16_t step=pwmPeriod_us/20;
+
+    uint64_t init_time=0;
 
     printk("Thread MANUAL init\n");
 
     while(1){
         k_sem_take(&sem_a2manual,  K_FOREVER);
 
-        printk("Task MANUAL at time: %lld ms\t\t",k_uptime_get());
-        //printk("Value of variable up: %d\n ",up);
+        init_time=k_uptime_get();
 
+        printk("Task MANUAL at time: %lld ms\t\t",k_uptime_get());
 
         if(up==1){
               if(highLevel_us<=pwmPeriod_us-step){
@@ -553,23 +677,40 @@ void thread_MANUAL_code(void *argA,void *argB,void *argC)
               k_msleep(5);
           }
 
-          printk("High level period is: %d us \n",highLevel_us);
+          printk("High level period is: %d us \t",highLevel_us);
 
-         /*semaphore*/
-         k_sem_give(&sem_manControl2pwm);
+          printk("Execution time task MANUAL: %lld ms\n",k_uptime_get()-init_time);
 
+          /*semaphore*/
+          k_sem_give(&sem_manControl2pwm);
 
     }
 }
 
+/**
+ * @brief thread_AUTOMATIC_code function implement the automatic mode 
+ *
+ * If the acquisition by the ADC gets a correct value, 
+ * it pass the sample by a semaphore to filter task, otherwise
+ * it set it to a "safety value" equal to zero. 
+ * 
+ * \param[*argA, *argB, *argC] void pointer parameters (not used in this project)
+ * \return void function-> it does not return anything
+ * 
+ */
 
 void thread_AUTOMATIC_code(void *argA,void *argB,void *argC)
 {
     int err=0;
+
+    uint64_t init_time=0;
+
     printk("Thread AUTOMATIC init\n");
 
     while(1){
-        k_sem_take(&sem_a2automatic,  K_FOREVER);
+        k_sem_take(&sem_a2automatic, K_FOREVER);
+
+        init_time=k_uptime_get();
 
         printk("Task AUTOMATIC at time: %lld ms\t",k_uptime_get());
 
@@ -580,14 +721,16 @@ void thread_AUTOMATIC_code(void *argA,void *argB,void *argC)
         }
         else {
             if(adc_sample_buffer[0] > 1023) {
-                printk("adc reading out of range\n\r");
+                printk("adc reading out of range\t\r");
                 sample=0;  /* Safety value */
             }
             else {
                 sample=1023-adc_sample_buffer[0];
-                printk("Sample: %4u\n",sample);
+                printk("Sample: %4u\t",sample);
              }
         }
+
+         printk("Execution time task AUTOMATIC: %lld ms\n",k_uptime_get()-init_time);
 
         /*semaphore*/
         k_sem_give(&sem_auto2filter);
@@ -596,14 +739,33 @@ void thread_AUTOMATIC_code(void *argA,void *argB,void *argC)
     }
 }
 
+/**
+ * @brief thread_FILTER_code function implement the filtering task
+ *
+ * Every new sample is taken from the shared memory and put into a vector
+ * from which we extract the average value of the last 10 samples.
+ * Then the goal of the task is to copy the starting vector into another 
+ * vector except for the samples "more than 5% far" form the average.
+ * At the end, a new average on the final vector has been done.
+ * The result is saved in another shared memory (global variable)
+ * and passed to the output task by another semaphore.
+ *
+ * \param[*argA, *argB, *argC] void pointer parameters (not used in this project)
+ * \return void function-> it does not return anything
+ * 
+ */
 
 void thread_FILTER_code(void *argA,void *argB,void *argC)
 {
 
     printk("Thread FILTER init\n");
 
+    uint64_t init_time=0;
+
     while(1){
         k_sem_take(&sem_auto2filter,  K_FOREVER);
+
+        init_time=k_uptime_get();
 
         printk("Task FILTER at time: %lld ms\t",k_uptime_get());
 
@@ -643,9 +805,8 @@ void thread_FILTER_code(void *argA,void *argB,void *argC)
         for(uint8_t i=0;i<10;i++){
             printk("\t %d",filteredSamples[i]);
         }
-        printk("\n");
-          
-
+        printk("\t");
+        
         uint16_t sum2=0;
 	
         for(uint16_t a=0;a<j;a++){
@@ -656,6 +817,8 @@ void thread_FILTER_code(void *argA,void *argB,void *argC)
         if(j>0){
             output=sum2/j;
         }
+
+        printk("Execution time task FILTER: %lld ms\n",k_uptime_get()-init_time);
     
         /*semaphore*/
         k_sem_give(&sem_filter2control);
@@ -663,16 +826,37 @@ void thread_FILTER_code(void *argA,void *argB,void *argC)
     }
 }
 
+/**
+ * @brief thread_CONTROL_code function implement the control algorithm
+ *
+ * This function occurs in the automatic mode.
+ * The control algorithm is implemented here.
+ * The filtered output value is passed from the 
+ * FILTER task. The current hour and date are 
+ * compare with the periods setted by the user.
+ * When the ON periods occurs, the control algorithm
+ * increase or decrese the PWM high period value in order
+ * to reach the environmental intensity setted by
+ * the user.
+ *
+ * \param[*argA, *argB, *argC] void pointer parameters (not used in this project)
+ * \return void function-> it does not return anything 
+ *
+ */
+
 void thread_CONTROL_code(void *argA,void *argB,void *argC)
 {
     uint16_t diff=0;
     uint32_t actualTime=0;
+    uint64_t init_time=0;
     int currentPeriod=0;
 
     printk("Thread CONTROL init\n");
 
     while(1){
         k_sem_take(&sem_filter2control, K_FOREVER);
+
+        init_time=k_uptime_get();
 
         printk("Task CONTROL at time: %lld ms\t",k_uptime_get());
 
@@ -690,14 +874,14 @@ void thread_CONTROL_code(void *argA,void *argB,void *argC)
         printk("CurrentPeriod: %d\t",currentPeriod);
 
         if(currentPeriod!=-1){
-            printk("Intensity: %d %\t",intensity[currentPeriod]);
+            printk("Intensity: %d % \t",intensity[currentPeriod]);
 
             /* Set the intensity value of the LED */
             if(output-(intensity[currentPeriod]*1023/100)>=2 && diff>0){
-                diff--;
+                diff-=16;
             }
             else if(output-(intensity[currentPeriod]*1023/100)<2 && diff<1024){
-                diff++;
+                diff+=16;
             }
 
             if(output>0){
@@ -717,12 +901,25 @@ void thread_CONTROL_code(void *argA,void *argB,void *argC)
             highLevel_us=0;
         }
         
-        printk("Output= %d \t diff= %d\n",output,diff);
+        printk("Output= %d \t diff= %d\t",output,diff);
+
+        printk("Execution time task CONTROL: %lld ms\n",k_uptime_get()-init_time);
 
         k_sem_give(&sem_manControl2pwm);
     }
 
 }
+
+/**
+ * @brief thread_PWM_code function shows the result by a LED
+ *
+ * This function gets the filtered result from task CONTROL and show
+ * the result so that it is proportional to a PWM duty cicle of a LED.
+ *
+ * \param[*argA, *argB, *argC] void pointer parameters (not used in this project)
+ * \return void function-> it does not return anything 
+ *
+ */
 
 void thread_PWM_code(void *argA,void *argB,void *argC)
 {
@@ -731,6 +928,8 @@ void thread_PWM_code(void *argA,void *argB,void *argC)
     const struct device *pwm0_dev;          /* Pointer to PWM device structure */
     
     int ret=0;                              /* Generic return value variable */
+
+    uint64_t init_time=0;
 
     /* Return pointer to device structure with the given name */
     pwm0_dev = device_get_binding(DT_LABEL(PWM0_NID));
@@ -744,8 +943,10 @@ void thread_PWM_code(void *argA,void *argB,void *argC)
     while(1){
         k_sem_take(&sem_manControl2pwm,  K_FOREVER);
 
-        printk("Task PWM at time: %lld ms\n\n",k_uptime_get());
-        //printk("highLevel_us value into PWM thread: %d \n\n",highLevel_us);
+        init_time=k_uptime_get();
+
+        printk("Task PWM at time: %lld ms\t",k_uptime_get());
+        printk("highLevel_us value: %d \t",highLevel_us);
 
         ret = pwm_pin_set_usec(pwm0_dev, BOARDLED_PIN,
 		      pwmPeriod_us,(unsigned int)(pwmPeriod_us-highLevel_us), PWM_POLARITY_NORMAL);
@@ -758,6 +959,7 @@ void thread_PWM_code(void *argA,void *argB,void *argC)
         if(dark){
             dark=false;
         }
+        printk("Execution time task PWM: %lld ms\n\n",k_uptime_get()-init_time);
 
     }
 }

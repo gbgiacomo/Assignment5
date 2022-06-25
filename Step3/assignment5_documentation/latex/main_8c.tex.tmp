@@ -1,0 +1,492 @@
+\hypertarget{main_8c}{}\doxysection{src/main.c File Reference}
+\label{main_8c}\index{src/main.c@{src/main.c}}
+
+
+Contains the implementation of the Assignment5.  
+
+
+{\ttfamily \#include $<$zephyr.\+h$>$}\newline
+{\ttfamily \#include $<$device.\+h$>$}\newline
+{\ttfamily \#include $<$devicetree.\+h$>$}\newline
+{\ttfamily \#include $<$drivers/gpio.\+h$>$}\newline
+{\ttfamily \#include $<$drivers/adc.\+h$>$}\newline
+{\ttfamily \#include $<$drivers/pwm.\+h$>$}\newline
+{\ttfamily \#include $<$sys/printk.\+h$>$}\newline
+{\ttfamily \#include $<$sys/\+\_\+\+\_\+assert.\+h$>$}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include $<$timing/timing.\+h$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$hal/nrf\+\_\+saadc.\+h$>$}\newline
+{\ttfamily \#include $<$console/console.\+h$>$}\newline
+Include dependency graph for main.\+c\+:
+% FIG 0
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{main_8c_a5936222e9802dbe8ceb1e99bd667466a}\label{main_8c_a5936222e9802dbe8ceb1e99bd667466a}} 
+\#define {\bfseries thread\+\_\+\+A\+\_\+prio}~1
+\item 
+\mbox{\Hypertarget{main_8c_a21198a64f6d5402279c27249f879ee21}\label{main_8c_a21198a64f6d5402279c27249f879ee21}} 
+\#define {\bfseries thread\+\_\+\+MANUAL\+\_\+prio}~1
+\item 
+\mbox{\Hypertarget{main_8c_a701ba2774173c549b1864506ec811bf2}\label{main_8c_a701ba2774173c549b1864506ec811bf2}} 
+\#define {\bfseries thread\+\_\+\+AUTOMATIC\+\_\+prio}~1
+\item 
+\mbox{\Hypertarget{main_8c_a2302ef9dd35fb5d693073b284986b97b}\label{main_8c_a2302ef9dd35fb5d693073b284986b97b}} 
+\#define {\bfseries thread\+\_\+\+FILTER\+\_\+prio}~1
+\item 
+\mbox{\Hypertarget{main_8c_a91c0d37506a3142a3bd3a34575eedf90}\label{main_8c_a91c0d37506a3142a3bd3a34575eedf90}} 
+\#define {\bfseries thread\+\_\+\+CONTROL\+\_\+prio}~1
+\item 
+\mbox{\Hypertarget{main_8c_a75411a43107c44397adeb785a39cd4f1}\label{main_8c_a75411a43107c44397adeb785a39cd4f1}} 
+\#define {\bfseries thread\+\_\+\+PWM\+\_\+prio}~1
+\item 
+\mbox{\Hypertarget{main_8c_a2ed7791f41bc6281906a0878492b0894}\label{main_8c_a2ed7791f41bc6281906a0878492b0894}} 
+\#define {\bfseries thread\+\_\+\+A\+\_\+period}~100
+\item 
+\mbox{\Hypertarget{main_8c_a6423a880df59733d2d9b509c7718d3a9}\label{main_8c_a6423a880df59733d2d9b509c7718d3a9}} 
+\#define {\bfseries STACK\+\_\+\+SIZE}~1024
+\item 
+\mbox{\Hypertarget{main_8c_a667158ed9af1b72bf062e54bda71dd4f}\label{main_8c_a667158ed9af1b72bf062e54bda71dd4f}} 
+\#define {\bfseries ADC\+\_\+\+NID}~DT\+\_\+\+NODELABEL(adc)
+\item 
+\mbox{\Hypertarget{main_8c_a00978ca9e8220475258dcbbbb7d29129}\label{main_8c_a00978ca9e8220475258dcbbbb7d29129}} 
+\#define {\bfseries ADC\+\_\+\+RESOLUTION}~10
+\item 
+\mbox{\Hypertarget{main_8c_a2bbc7e1578f01928d36ef7fa94ac4905}\label{main_8c_a2bbc7e1578f01928d36ef7fa94ac4905}} 
+\#define {\bfseries ADC\+\_\+\+GAIN}~ADC\+\_\+\+GAIN\+\_\+1\+\_\+4
+\item 
+\mbox{\Hypertarget{main_8c_a317868c528ebe27fbca094a8bc2d910c}\label{main_8c_a317868c528ebe27fbca094a8bc2d910c}} 
+\#define {\bfseries ADC\+\_\+\+REFERENCE}~ADC\+\_\+\+REF\+\_\+\+VDD\+\_\+1\+\_\+4
+\item 
+\mbox{\Hypertarget{main_8c_aeb8de5967ac4465f35317d818eeb129b}\label{main_8c_aeb8de5967ac4465f35317d818eeb129b}} 
+\#define {\bfseries ADC\+\_\+\+ACQUISITION\+\_\+\+TIME}~ADC\+\_\+\+ACQ\+\_\+\+TIME(ADC\+\_\+\+ACQ\+\_\+\+TIME\+\_\+\+MICROSECONDS, 40)
+\item 
+\mbox{\Hypertarget{main_8c_a8bfca74ee546715af6682194ea92286a}\label{main_8c_a8bfca74ee546715af6682194ea92286a}} 
+\#define {\bfseries ADC\+\_\+\+CHANNEL\+\_\+\+ID}~1
+\item 
+\mbox{\Hypertarget{main_8c_a5508ef7e762284248c2e87e16865522e}\label{main_8c_a5508ef7e762284248c2e87e16865522e}} 
+\#define {\bfseries ADC\+\_\+\+CHANNEL\+\_\+\+INPUT}~NRF\+\_\+\+SAADC\+\_\+\+INPUT\+\_\+\+AIN1
+\item 
+\mbox{\Hypertarget{main_8c_a6b20d41d6252e9871430c242cb1a56e7}\label{main_8c_a6b20d41d6252e9871430c242cb1a56e7}} 
+\#define {\bfseries BUFFER\+\_\+\+SIZE}~1
+\item 
+\mbox{\Hypertarget{main_8c_a70ed59adcb4159ac551058053e649640}\label{main_8c_a70ed59adcb4159ac551058053e649640}} 
+\#define {\bfseries SIZE}~10 /$\ast$ Size of the vector to filter $\ast$/
+\item 
+\mbox{\Hypertarget{main_8c_ab48b150a8660d0152dfde25b42c1755f}\label{main_8c_ab48b150a8660d0152dfde25b42c1755f}} 
+\#define {\bfseries PWM0\+\_\+\+NID}~DT\+\_\+\+NODELABEL(pwm0)
+\item 
+\mbox{\Hypertarget{main_8c_a66e62e873d067860b696a1f47b60916a}\label{main_8c_a66e62e873d067860b696a1f47b60916a}} 
+\#define {\bfseries BOARDLED\+\_\+\+PIN}~DT\+\_\+\+PROP(PWM0\+\_\+\+NID, ch0\+\_\+pin)
+\item 
+\mbox{\Hypertarget{main_8c_a4c0e6f34369bef1deb3a9efae6ac14fb}\label{main_8c_a4c0e6f34369bef1deb3a9efae6ac14fb}} 
+\#define {\bfseries GPIO0\+\_\+\+NID}~DT\+\_\+\+NODELABEL(gpio0)
+\item 
+\mbox{\Hypertarget{main_8c_ad3c05b8933cd253785fdd123f6dbfc18}\label{main_8c_ad3c05b8933cd253785fdd123f6dbfc18}} 
+\#define {\bfseries BOARDBUT1}~0xb /$\ast$ Pin at which BUT1 is connected. Addressing is direct (i.\+e., pin number) $\ast$/
+\item 
+\mbox{\Hypertarget{main_8c_a590d906828bd5948fafbef47dc1c3b0c}\label{main_8c_a590d906828bd5948fafbef47dc1c3b0c}} 
+\#define {\bfseries BOARDBUT2}~0xc /$\ast$ Pin at which BUT2 is connected. Addressing is direct (i.\+e., pin number) $\ast$/
+\item 
+\mbox{\Hypertarget{main_8c_a2e82ac21050552495e5a8551178bf258}\label{main_8c_a2e82ac21050552495e5a8551178bf258}} 
+\#define {\bfseries BOARDBUT3}~0x18 /$\ast$ Pin at which BUT3 is connected. Addressing is direct (i.\+e., pin number) $\ast$/
+\item 
+\mbox{\Hypertarget{main_8c_abee96e1280405ff973ee2b6b07eec104}\label{main_8c_abee96e1280405ff973ee2b6b07eec104}} 
+\#define {\bfseries BOARDBUT4}~0x19 /$\ast$ Pin at which BUT4 is connected. Addressing is direct (i.\+e., pin number) $\ast$/
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{main_8c_aa25f5f9092ccf13998f3cb9e9e1d10a6}\label{main_8c_aa25f5f9092ccf13998f3cb9e9e1d10a6}} 
+{\bfseries K\+\_\+\+THREAD\+\_\+\+STACK\+\_\+\+DEFINE} (thread\+\_\+\+A\+\_\+stack, STACK\+\_\+\+SIZE)
+\item 
+\mbox{\Hypertarget{main_8c_a1575764930903a4a3a453b82642f47d3}\label{main_8c_a1575764930903a4a3a453b82642f47d3}} 
+{\bfseries K\+\_\+\+THREAD\+\_\+\+STACK\+\_\+\+DEFINE} (thread\+\_\+\+MANUAL\+\_\+stack, STACK\+\_\+\+SIZE)
+\item 
+\mbox{\Hypertarget{main_8c_a86abb53b456e692d0627d1efec07cf85}\label{main_8c_a86abb53b456e692d0627d1efec07cf85}} 
+{\bfseries K\+\_\+\+THREAD\+\_\+\+STACK\+\_\+\+DEFINE} (thread\+\_\+\+AUTOMATIC\+\_\+stack, STACK\+\_\+\+SIZE)
+\item 
+\mbox{\Hypertarget{main_8c_af2bdf76bc612d8720948f4c6398be7d5}\label{main_8c_af2bdf76bc612d8720948f4c6398be7d5}} 
+{\bfseries K\+\_\+\+THREAD\+\_\+\+STACK\+\_\+\+DEFINE} (thread\+\_\+\+FILTER\+\_\+stack, STACK\+\_\+\+SIZE)
+\item 
+\mbox{\Hypertarget{main_8c_ac67a0006b1f81f07525546909d321f74}\label{main_8c_ac67a0006b1f81f07525546909d321f74}} 
+{\bfseries K\+\_\+\+THREAD\+\_\+\+STACK\+\_\+\+DEFINE} (thread\+\_\+\+CONTROL\+\_\+stack, STACK\+\_\+\+SIZE)
+\item 
+\mbox{\Hypertarget{main_8c_ad7fd8f82c6b63d351b9992d8e39cfd1a}\label{main_8c_ad7fd8f82c6b63d351b9992d8e39cfd1a}} 
+{\bfseries K\+\_\+\+THREAD\+\_\+\+STACK\+\_\+\+DEFINE} (thread\+\_\+\+PWM\+\_\+stack, STACK\+\_\+\+SIZE)
+\item 
+void \mbox{\hyperlink{main_8c_a61675a61bbec86901b2fe28f008e881c}{thread\+\_\+\+A\+\_\+code}} (void $\ast$argA, void $\ast$argB, void $\ast$argC)
+\begin{DoxyCompactList}\small\item\em thread\+\_\+\+A\+\_\+code function implement the clock time \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_a6e59d49e91cfc45ace6df16ca1fa6035}{thread\+\_\+\+MANUAL\+\_\+code}} (void $\ast$argA, void $\ast$argB, void $\ast$argC)
+\begin{DoxyCompactList}\small\item\em thread\+\_\+\+MANUAL\+\_\+code function implement the manual mode \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_af22cc7153cbe37553924bc78d4aee847}{thread\+\_\+\+AUTOMATIC\+\_\+code}} (void $\ast$argA, void $\ast$argB, void $\ast$argC)
+\begin{DoxyCompactList}\small\item\em thread\+\_\+\+AUTOMATIC\+\_\+code function implement the automatic mode \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_af79c8e6a89c4591d59d21aeed5602168}{thread\+\_\+\+FILTER\+\_\+code}} (void $\ast$argA, void $\ast$argB, void $\ast$argC)
+\begin{DoxyCompactList}\small\item\em thread\+\_\+\+FILTER\+\_\+code function implement the filtering task \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_af2eaab7bbcd7a5599b59a34a3464e6c0}{thread\+\_\+\+CONTROL\+\_\+code}} (void $\ast$argA, void $\ast$argB, void $\ast$argC)
+\begin{DoxyCompactList}\small\item\em thread\+\_\+\+CONTROL\+\_\+code function implement the control algorithm \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_a8efa3b68a56da839830fa12b15c0b9e3}{thread\+\_\+\+PWM\+\_\+code}} (void $\ast$argA, void $\ast$argB, void $\ast$argC)
+\begin{DoxyCompactList}\small\item\em thread\+\_\+\+PWM\+\_\+code function shows the result by a LED \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_aebf2d34f072541c364197e22fbe860c1}{but1press\+\_\+cbfunction}} ()
+\begin{DoxyCompactList}\small\item\em but1press\+\_\+cbfunction function run ISR for browse up \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_ade623fb239fed3e88e7df042a34c9a73}{but2press\+\_\+cbfunction}} ()
+\begin{DoxyCompactList}\small\item\em but2press\+\_\+cbfunction function run ISR for browse down \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_a12f2a8ee68ac40b30682635dcdb9d814}{but3press\+\_\+cbfunction}} ()
+\begin{DoxyCompactList}\small\item\em but3press\+\_\+cbfunction function run ISR for changing mode \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_a3759a143505ebd2ace97ac6f02d05ab3}{but4press\+\_\+cbfunction}} ()
+\begin{DoxyCompactList}\small\item\em but4press\+\_\+cbfunction function run ISR for activating the console \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{main_8c_a2d5f0d05ef37ac0d607a3d624fd8c90e}{char2int}} (char ch)
+\begin{DoxyCompactList}\small\item\em char2int function convert numerical char to int \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_a8fb6372ac406fb04afb0dbde07c128b9}{print\+Days}} (uint8\+\_\+t day)
+\begin{DoxyCompactList}\small\item\em print\+Days function print the days \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_a41681a4f770a4314939bd47e174cab0c}{user\+Setup}} ()
+\begin{DoxyCompactList}\small\item\em user\+Setup function activate the console \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{main_8c_a6288eba0f8e8ad3ab1544ad731eb7667}{main}} (void)
+\begin{DoxyCompactList}\small\item\em main function run project \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{main_8c_a6d4412666e45fbd3d7bb2e537e3e4921}\label{main_8c_a6d4412666e45fbd3d7bb2e537e3e4921}} 
+struct k\+\_\+thread {\bfseries thread\+\_\+\+A\+\_\+data}
+\item 
+\mbox{\Hypertarget{main_8c_a9c3733d3dba233e5d27c9f2a4eb9607b}\label{main_8c_a9c3733d3dba233e5d27c9f2a4eb9607b}} 
+struct k\+\_\+thread {\bfseries thread\+\_\+\+MANUAL\+\_\+data}
+\item 
+\mbox{\Hypertarget{main_8c_a5024d0cb525fe74820f641d4e8b8f781}\label{main_8c_a5024d0cb525fe74820f641d4e8b8f781}} 
+struct k\+\_\+thread {\bfseries thread\+\_\+\+AUTOMATIC\+\_\+data}
+\item 
+\mbox{\Hypertarget{main_8c_a713f174adb34bea3c36a8c13b320b7f9}\label{main_8c_a713f174adb34bea3c36a8c13b320b7f9}} 
+struct k\+\_\+thread {\bfseries thread\+\_\+\+FILTER\+\_\+data}
+\item 
+\mbox{\Hypertarget{main_8c_adab90cd41b4efcb4b074c6eee8c34cda}\label{main_8c_adab90cd41b4efcb4b074c6eee8c34cda}} 
+struct k\+\_\+thread {\bfseries thread\+\_\+\+CONTROL\+\_\+data}
+\item 
+\mbox{\Hypertarget{main_8c_a0feabd52ecd31e876f337596520a71a2}\label{main_8c_a0feabd52ecd31e876f337596520a71a2}} 
+struct k\+\_\+thread {\bfseries thread\+\_\+\+PWM\+\_\+data}
+\item 
+\mbox{\Hypertarget{main_8c_aaac68d6bd12397c115c8f5fb8b8dae16}\label{main_8c_aaac68d6bd12397c115c8f5fb8b8dae16}} 
+k\+\_\+tid\+\_\+t {\bfseries thread\+\_\+\+A\+\_\+tid}
+\item 
+\mbox{\Hypertarget{main_8c_a67f943630e2a547bece990a21c24ec38}\label{main_8c_a67f943630e2a547bece990a21c24ec38}} 
+k\+\_\+tid\+\_\+t {\bfseries thread\+\_\+\+MANUAL\+\_\+tid}
+\item 
+\mbox{\Hypertarget{main_8c_abc87d5727f53b2e1510cc70389e87be4}\label{main_8c_abc87d5727f53b2e1510cc70389e87be4}} 
+k\+\_\+tid\+\_\+t {\bfseries thread\+\_\+\+AUTOMATIC\+\_\+tid}
+\item 
+\mbox{\Hypertarget{main_8c_a377102d48689a793afa390e68d42e58b}\label{main_8c_a377102d48689a793afa390e68d42e58b}} 
+k\+\_\+tid\+\_\+t {\bfseries thread\+\_\+\+FILTER\+\_\+tid}
+\item 
+\mbox{\Hypertarget{main_8c_a336c430235a1cc004e1ae7b6b17af4b7}\label{main_8c_a336c430235a1cc004e1ae7b6b17af4b7}} 
+k\+\_\+tid\+\_\+t {\bfseries thread\+\_\+\+CONTROL\+\_\+tid}
+\item 
+\mbox{\Hypertarget{main_8c_a0c28ffb05ed9e2538da054e8ed7162d5}\label{main_8c_a0c28ffb05ed9e2538da054e8ed7162d5}} 
+k\+\_\+tid\+\_\+t {\bfseries thread\+\_\+\+PWM\+\_\+tid}
+\item 
+\mbox{\Hypertarget{main_8c_a93e3390ce7bf44542971da0b20e8c052}\label{main_8c_a93e3390ce7bf44542971da0b20e8c052}} 
+struct k\+\_\+sem {\bfseries sem\+\_\+a2manual}
+\item 
+\mbox{\Hypertarget{main_8c_a8365ce7e8425ec52ed5e5a3156a63c60}\label{main_8c_a8365ce7e8425ec52ed5e5a3156a63c60}} 
+struct k\+\_\+sem {\bfseries sem\+\_\+a2automatic}
+\item 
+\mbox{\Hypertarget{main_8c_aaa17895e554a2e3805c2649c43d23342}\label{main_8c_aaa17895e554a2e3805c2649c43d23342}} 
+struct k\+\_\+sem {\bfseries sem\+\_\+auto2filter}
+\item 
+\mbox{\Hypertarget{main_8c_a29a7e1840ecb948dbb31913bab999503}\label{main_8c_a29a7e1840ecb948dbb31913bab999503}} 
+struct k\+\_\+sem {\bfseries sem\+\_\+filter2control}
+\item 
+\mbox{\Hypertarget{main_8c_a2c7047379285dea61232b9950aef0c06}\label{main_8c_a2c7047379285dea61232b9950aef0c06}} 
+struct k\+\_\+sem {\bfseries sem\+\_\+man\+Control2pwm}
+\item 
+\mbox{\Hypertarget{main_8c_a80d0933bb7a6454573b3ade529a72418}\label{main_8c_a80d0933bb7a6454573b3ade529a72418}} 
+struct k\+\_\+timer {\bfseries my\+\_\+timer}
+\item 
+\mbox{\Hypertarget{main_8c_a445f79326d40128ece59a749adff6894}\label{main_8c_a445f79326d40128ece59a749adff6894}} 
+const struct device $\ast$ {\bfseries adc\+\_\+dev} = NULL
+\item 
+\mbox{\Hypertarget{main_8c_ad0a86ff63619b8e98baa6c18f0f013ff}\label{main_8c_ad0a86ff63619b8e98baa6c18f0f013ff}} 
+uint16\+\_\+t {\bfseries samples} \mbox{[}SIZE\mbox{]} =\{0,0,0,0,0,0,0,0,0,0\}
+\item 
+\mbox{\Hypertarget{main_8c_acb1d69d6a50e913dcb35f2e546f79b81}\label{main_8c_acb1d69d6a50e913dcb35f2e546f79b81}} 
+uint16\+\_\+t {\bfseries filtered\+Samples} \mbox{[}SIZE\mbox{]} =\{0,0,0,0,0,0,0,0,0,0\}
+\item 
+\mbox{\Hypertarget{main_8c_ac73839a7c6cf3b1544ee9e5ef20c138a}\label{main_8c_ac73839a7c6cf3b1544ee9e5ef20c138a}} 
+int8\+\_\+t {\bfseries index} =-\/1
+\item 
+\mbox{\Hypertarget{main_8c_a77699ad054dddaed3e88cb9da2b7715c}\label{main_8c_a77699ad054dddaed3e88cb9da2b7715c}} 
+uint16\+\_\+t {\bfseries average} =0
+\item 
+\mbox{\Hypertarget{main_8c_a3f78888892d66e2d4b9828c6d22ab057}\label{main_8c_a3f78888892d66e2d4b9828c6d22ab057}} 
+uint16\+\_\+t {\bfseries upper\+Level} =0
+\item 
+\mbox{\Hypertarget{main_8c_a8dec690e27646e7c332b6477f6340bd7}\label{main_8c_a8dec690e27646e7c332b6477f6340bd7}} 
+uint16\+\_\+t {\bfseries lower\+Level} =0
+\item 
+\mbox{\Hypertarget{main_8c_a9b41b45488abcd23c6936f38ee89d609}\label{main_8c_a9b41b45488abcd23c6936f38ee89d609}} 
+uint16\+\_\+t {\bfseries pwm\+Period\+\_\+us} = 500
+\item 
+\mbox{\Hypertarget{main_8c_aaf8f38ac9dde4f58cfa5b0f2243b04dd}\label{main_8c_aaf8f38ac9dde4f58cfa5b0f2243b04dd}} 
+volatile bool {\bfseries mode} =0
+\item 
+\mbox{\Hypertarget{main_8c_a8e7150c0aea2a76b464fdd9c7117cb02}\label{main_8c_a8e7150c0aea2a76b464fdd9c7117cb02}} 
+volatile bool {\bfseries up} =0
+\item 
+\mbox{\Hypertarget{main_8c_a7a8ef290e3747f284e7ce226ddd821bc}\label{main_8c_a7a8ef290e3747f284e7ce226ddd821bc}} 
+volatile bool {\bfseries down} =0
+\item 
+\mbox{\Hypertarget{main_8c_af6c3ca3b9679dfc32a782ee50b24cdfd}\label{main_8c_af6c3ca3b9679dfc32a782ee50b24cdfd}} 
+volatile bool {\bfseries cons} =0
+\item 
+\mbox{\Hypertarget{main_8c_a298634174b44c7073a923835c57f6376}\label{main_8c_a298634174b44c7073a923835c57f6376}} 
+volatile bool {\bfseries dark} =0
+\item 
+\mbox{\Hypertarget{main_8c_ab30ba07e2a0bd07a15e45a92c32db9c5}\label{main_8c_ab30ba07e2a0bd07a15e45a92c32db9c5}} 
+bool {\bfseries state} =0
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Contains the implementation of the Assignment5. 
+
+The goal of this code is set the light intensity of the enviromental at a certain threshold, preaviusly defined by the user. In the manual mode the user can sets directly the light intensity of the LED, through the two switches. Otherwise, in the automatic mode, LED is power by the control algorithm. The system work in real-\/time.
+
+\begin{DoxyAuthor}{Author}
+Mattia Longo and Giacomo Bego 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+25 Jun 2022 
+\end{DoxyDate}
+\begin{DoxyRefDesc}{Bug}
+\item[\mbox{\hyperlink{bug__bug000001}{Bug}}]No known bugs \end{DoxyRefDesc}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{main_8c_aebf2d34f072541c364197e22fbe860c1}\label{main_8c_aebf2d34f072541c364197e22fbe860c1}} 
+\index{main.c@{main.c}!but1press\_cbfunction@{but1press\_cbfunction}}
+\index{but1press\_cbfunction@{but1press\_cbfunction}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{but1press\_cbfunction()}{but1press\_cbfunction()}}
+{\footnotesize\ttfamily void but1press\+\_\+cbfunction (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+but1press\+\_\+cbfunction function run ISR for browse up 
+
+but1press\+\_\+cbfunction is the service routine related to the interrupt for browsing up. It just change the state of the volatile \char`\"{}up\char`\"{} variable \mbox{\Hypertarget{main_8c_ade623fb239fed3e88e7df042a34c9a73}\label{main_8c_ade623fb239fed3e88e7df042a34c9a73}} 
+\index{main.c@{main.c}!but2press\_cbfunction@{but2press\_cbfunction}}
+\index{but2press\_cbfunction@{but2press\_cbfunction}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{but2press\_cbfunction()}{but2press\_cbfunction()}}
+{\footnotesize\ttfamily void but2press\+\_\+cbfunction (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+but2press\+\_\+cbfunction function run ISR for browse down 
+
+but2press\+\_\+cbfunction is the service routine related to the interrupt for browsing up. It just change the state of the volatile \char`\"{}down\char`\"{} variable \mbox{\Hypertarget{main_8c_a12f2a8ee68ac40b30682635dcdb9d814}\label{main_8c_a12f2a8ee68ac40b30682635dcdb9d814}} 
+\index{main.c@{main.c}!but3press\_cbfunction@{but3press\_cbfunction}}
+\index{but3press\_cbfunction@{but3press\_cbfunction}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{but3press\_cbfunction()}{but3press\_cbfunction()}}
+{\footnotesize\ttfamily void but3press\+\_\+cbfunction (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+but3press\+\_\+cbfunction function run ISR for changing mode 
+
+but3press\+\_\+cbfunction is the service routine related to the interrupt for changing mode. It just modify the state of the volatile \char`\"{}mode\char`\"{} variable \mbox{\Hypertarget{main_8c_a3759a143505ebd2ace97ac6f02d05ab3}\label{main_8c_a3759a143505ebd2ace97ac6f02d05ab3}} 
+\index{main.c@{main.c}!but4press\_cbfunction@{but4press\_cbfunction}}
+\index{but4press\_cbfunction@{but4press\_cbfunction}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{but4press\_cbfunction()}{but4press\_cbfunction()}}
+{\footnotesize\ttfamily void but4press\+\_\+cbfunction (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+but4press\+\_\+cbfunction function run ISR for activating the console 
+
+but4press\+\_\+cbfunction is the service routine related to the interrupt for activating console. It just modify the state of the volatile \char`\"{}dark\char`\"{} and \char`\"{}cons\char`\"{} variables \mbox{\Hypertarget{main_8c_a2d5f0d05ef37ac0d607a3d624fd8c90e}\label{main_8c_a2d5f0d05ef37ac0d607a3d624fd8c90e}} 
+\index{main.c@{main.c}!char2int@{char2int}}
+\index{char2int@{char2int}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{char2int()}{char2int()}}
+{\footnotesize\ttfamily int char2int (\begin{DoxyParamCaption}\item[{char}]{ch }\end{DoxyParamCaption})}
+
+
+
+char2int function convert numerical char to int 
+
+It convert the numerical char variables to integer values
+
+\begin{DoxyAuthor}{Author}
+Mattia Longo and Giacomo Bego 
+\end{DoxyAuthor}
+
+\begin{DoxyParams}{Parameters}
+{\em \mbox{[}ch\mbox{]}} & char variable to converter (only value from 0 to 9) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer value converted 
+\end{DoxyReturn}
+\mbox{\Hypertarget{main_8c_a6288eba0f8e8ad3ab1544ad731eb7667}\label{main_8c_a6288eba0f8e8ad3ab1544ad731eb7667}} 
+\index{main.c@{main.c}!main@{main}}
+\index{main@{main}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily void main (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+
+
+main function run project 
+
+main function sets the ADC, creates the tasks and initilizes the semaphores. \mbox{\Hypertarget{main_8c_a8fb6372ac406fb04afb0dbde07c128b9}\label{main_8c_a8fb6372ac406fb04afb0dbde07c128b9}} 
+\index{main.c@{main.c}!printDays@{printDays}}
+\index{printDays@{printDays}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{printDays()}{printDays()}}
+{\footnotesize\ttfamily void print\+Days (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{day }\end{DoxyParamCaption})}
+
+
+
+print\+Days function print the days 
+
+This function print the days of the week to console
+
+\begin{DoxyAuthor}{Author}
+Mattia Longo and Giacomo Bego 
+\end{DoxyAuthor}
+
+\begin{DoxyParams}{Parameters}
+{\em \mbox{[}day\mbox{]}} & integer value that indicates the day from 0 to 6 \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{main_8c_a61675a61bbec86901b2fe28f008e881c}\label{main_8c_a61675a61bbec86901b2fe28f008e881c}} 
+\index{main.c@{main.c}!thread\_A\_code@{thread\_A\_code}}
+\index{thread\_A\_code@{thread\_A\_code}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{thread\_A\_code()}{thread\_A\_code()}}
+{\footnotesize\ttfamily void thread\+\_\+\+A\+\_\+code (\begin{DoxyParamCaption}\item[{void $\ast$}]{argA,  }\item[{void $\ast$}]{argB,  }\item[{void $\ast$}]{argC }\end{DoxyParamCaption})}
+
+
+
+thread\+\_\+\+A\+\_\+code function implement the clock time 
+
+This function occurs every 100 ms. The aims are increment the current hour, date and verify the function mode selected. The user interface is activate cecking the switch state.
+
+
+\begin{DoxyParams}{Parameters}
+{\em \mbox{[}$\ast$argA,$\ast$argB,$\ast$arg\+C\mbox{]}} & void pointer parameters (not used in this project) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void function-\/$>$ it does not return anything 
+\end{DoxyReturn}
+\mbox{\Hypertarget{main_8c_af22cc7153cbe37553924bc78d4aee847}\label{main_8c_af22cc7153cbe37553924bc78d4aee847}} 
+\index{main.c@{main.c}!thread\_AUTOMATIC\_code@{thread\_AUTOMATIC\_code}}
+\index{thread\_AUTOMATIC\_code@{thread\_AUTOMATIC\_code}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{thread\_AUTOMATIC\_code()}{thread\_AUTOMATIC\_code()}}
+{\footnotesize\ttfamily void thread\+\_\+\+AUTOMATIC\+\_\+code (\begin{DoxyParamCaption}\item[{void $\ast$}]{argA,  }\item[{void $\ast$}]{argB,  }\item[{void $\ast$}]{argC }\end{DoxyParamCaption})}
+
+
+
+thread\+\_\+\+AUTOMATIC\+\_\+code function implement the automatic mode 
+
+If the acquisition by the ADC gets a correct value, it pass the sample by a semaphore to filter task, otherwise it set it to a \char`\"{}safety value\char`\"{} equal to zero.
+
+
+\begin{DoxyParams}{Parameters}
+{\em \mbox{[}$\ast$argA,$\ast$argB,$\ast$arg\+C\mbox{]}} & void pointer parameters (not used in this project) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void function-\/$>$ it does not return anything 
+\end{DoxyReturn}
+\mbox{\Hypertarget{main_8c_af2eaab7bbcd7a5599b59a34a3464e6c0}\label{main_8c_af2eaab7bbcd7a5599b59a34a3464e6c0}} 
+\index{main.c@{main.c}!thread\_CONTROL\_code@{thread\_CONTROL\_code}}
+\index{thread\_CONTROL\_code@{thread\_CONTROL\_code}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{thread\_CONTROL\_code()}{thread\_CONTROL\_code()}}
+{\footnotesize\ttfamily void thread\+\_\+\+CONTROL\+\_\+code (\begin{DoxyParamCaption}\item[{void $\ast$}]{argA,  }\item[{void $\ast$}]{argB,  }\item[{void $\ast$}]{argC }\end{DoxyParamCaption})}
+
+
+
+thread\+\_\+\+CONTROL\+\_\+code function implement the control algorithm 
+
+This function occurs in the automatic mode. The control algorithm is implemented here. The filtered output value is passed from the FILTER task. The current hour and date are compare with the periods setted by the user. When the ON periods occurs, the control algorithm increase or decrese the PWM high period value in order to reach the environmental intensity setted by the user.
+
+
+\begin{DoxyParams}{Parameters}
+{\em \mbox{[}$\ast$argA,$\ast$argB,$\ast$arg\+C\mbox{]}} & void pointer parameters (not used in this project) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void function-\/$>$ it does not return anything 
+\end{DoxyReturn}
+\mbox{\Hypertarget{main_8c_af79c8e6a89c4591d59d21aeed5602168}\label{main_8c_af79c8e6a89c4591d59d21aeed5602168}} 
+\index{main.c@{main.c}!thread\_FILTER\_code@{thread\_FILTER\_code}}
+\index{thread\_FILTER\_code@{thread\_FILTER\_code}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{thread\_FILTER\_code()}{thread\_FILTER\_code()}}
+{\footnotesize\ttfamily void thread\+\_\+\+FILTER\+\_\+code (\begin{DoxyParamCaption}\item[{void $\ast$}]{argA,  }\item[{void $\ast$}]{argB,  }\item[{void $\ast$}]{argC }\end{DoxyParamCaption})}
+
+
+
+thread\+\_\+\+FILTER\+\_\+code function implement the filtering task 
+
+Every new sample is taken from the shared memory and put into a vector from which we extract the average value of the last 10 samples. Then the goal of the task is to copy the starting vector into another vector except for the samples \char`\"{}more than 5\% far\char`\"{} form the average. At the end, a new average on the final vector has been done. The result is saved in another shared memory (global variable) and passed to the output task by another semaphore.
+
+
+\begin{DoxyParams}{Parameters}
+{\em \mbox{[}$\ast$argA,$\ast$argB,$\ast$arg\+C\mbox{]}} & void pointer parameters (not used in this project) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void function-\/$>$ it does not return anything 
+\end{DoxyReturn}
+\mbox{\Hypertarget{main_8c_a6e59d49e91cfc45ace6df16ca1fa6035}\label{main_8c_a6e59d49e91cfc45ace6df16ca1fa6035}} 
+\index{main.c@{main.c}!thread\_MANUAL\_code@{thread\_MANUAL\_code}}
+\index{thread\_MANUAL\_code@{thread\_MANUAL\_code}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{thread\_MANUAL\_code()}{thread\_MANUAL\_code()}}
+{\footnotesize\ttfamily void thread\+\_\+\+MANUAL\+\_\+code (\begin{DoxyParamCaption}\item[{void $\ast$}]{argA,  }\item[{void $\ast$}]{argB,  }\item[{void $\ast$}]{argC }\end{DoxyParamCaption})}
+
+
+
+thread\+\_\+\+MANUAL\+\_\+code function implement the manual mode 
+
+When the user press the button 3 this thread occurs. The aim is increase and deacrease the light intensity of the LED, through two switches (\char`\"{}up\char`\"{} and \char`\"{}down\char`\"{}). Pressing them, the high level period of the PWM change. This initial value is taken from the shared memory. The output is saved in a shared memory (global variable) and passed to the LED power task by another semaphore.
+
+
+\begin{DoxyParams}{Parameters}
+{\em \mbox{[}$\ast$argA,$\ast$argB,$\ast$arg\+C\mbox{]}} & void pointer parameters (not used in this project) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void function-\/$>$ it does not return anything 
+\end{DoxyReturn}
+\mbox{\Hypertarget{main_8c_a8efa3b68a56da839830fa12b15c0b9e3}\label{main_8c_a8efa3b68a56da839830fa12b15c0b9e3}} 
+\index{main.c@{main.c}!thread\_PWM\_code@{thread\_PWM\_code}}
+\index{thread\_PWM\_code@{thread\_PWM\_code}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{thread\_PWM\_code()}{thread\_PWM\_code()}}
+{\footnotesize\ttfamily void thread\+\_\+\+PWM\+\_\+code (\begin{DoxyParamCaption}\item[{void $\ast$}]{argA,  }\item[{void $\ast$}]{argB,  }\item[{void $\ast$}]{argC }\end{DoxyParamCaption})}
+
+
+
+thread\+\_\+\+PWM\+\_\+code function shows the result by a LED 
+
+This function gets the filtered result from task CONTROL and show the result so that it is proportional to a PWM duty cicle of a LED.
+
+
+\begin{DoxyParams}{Parameters}
+{\em \mbox{[}$\ast$argA,$\ast$argB,$\ast$arg\+C\mbox{]}} & void pointer parameters (not used in this project) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void function-\/$>$ it does not return anything 
+\end{DoxyReturn}
+\mbox{\Hypertarget{main_8c_a41681a4f770a4314939bd47e174cab0c}\label{main_8c_a41681a4f770a4314939bd47e174cab0c}} 
+\index{main.c@{main.c}!userSetup@{userSetup}}
+\index{userSetup@{userSetup}!main.c@{main.c}}
+\doxysubsubsection{\texorpdfstring{userSetup()}{userSetup()}}
+{\footnotesize\ttfamily void user\+Setup (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+user\+Setup function activate the console 
+
+Activate the user interface console to setup the ON/\+OFF period and the current time.
+
+\begin{DoxyAuthor}{Author}
+Mattia Longo and Giacomo Bego 
+\end{DoxyAuthor}
